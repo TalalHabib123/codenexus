@@ -25,11 +25,11 @@ export function activate(context: vscode.ExtensionContext) {
         {}
     );
 
-    panel.webview.html = getWebviewContent(allFiles);
+    // panel.webview.html = getWebviewContent(allFiles);
 
-    // for (const [filePath, content] of Object.entries(newFiles)) {
-    //     sendFileToServer(filePath, content);
-    // }
+    for (const [filePath, content] of Object.entries(newFiles)) {
+        sendFileToServer(filePath, content);
+    }
 }
 
 function traverseFolder(
@@ -56,36 +56,36 @@ function traverseFolder(
 
 function sendFileToServer(filePath: string, content: string) {
     const fileName = path.basename(filePath);
-    axios.post('http://localhost:3000/upload', {
-        fileName: fileName,
-        content: content
+    axios.post('http://127.0.0.1:8000/analyze-ast', {
+        code: content
     }).then(response => {
         console.log(`File ${fileName} sent successfully.`);
+        console.log(response.data);
     }).catch(error => {
         console.error(`Failed to send file ${fileName}: `, error);
     });
 }
 
-function getWebviewContent(fileList: { [key: string]: string }): string {
-    const fileListHtml = Object.entries(fileList).map(([filePath, content]) => `
-        <li>
-            <h2>${filePath}</h2>
-            <pre>${content}</pre>
-        </li>
-    `).join('');
-    return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Workspace Files</title>
-        </head>
-        <body>
-            <h1>Workspace Files</h1>
-            <ul>${fileListHtml}</ul>
-        </body>
-        </html>`;
-}
+// function getWebviewContent(fileList: { [key: string]: string }): string {
+//     const fileListHtml = Object.entries(fileList).map(([filePath, content]) => `
+//         <li>
+//             <h2>${filePath}</h2>
+//             <pre>${content}</pre>
+//         </li>
+//     `).join('');
+//     return `
+//         <!DOCTYPE html>
+//         <html lang="en">
+//         <head>
+//             <meta charset="UTF-8">
+//             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//             <title>Workspace Files</title>
+//         </head>
+//         <body>
+//             <h1>Workspace Files</h1>
+//             <ul>${fileListHtml}</ul>
+//         </body>
+//         </html>`;
+// }
 
 export function deactivate() {}
