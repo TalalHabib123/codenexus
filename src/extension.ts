@@ -1,31 +1,8 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
-import axios from 'axios';
+import { CodeResponse } from './types/api';
+import { sendFileToServer } from './utils/api/ast_server';
+import { traverseFolder } from './utils/codebase_analysis/folder_analysis';
 
-interface GlobalVariable {
-    variable_name: string;
-    variable_type: string;
-}
-
-interface Import {
-    name: string;
-    alias?: string;
-    type: string;
-    module?: string;
-}
-
-interface CodeResponse {
-    ast?: string;
-    function_names?: string[];
-    class_details?: { [key: string]: string | string[] }[];
-    global_variables?: GlobalVariable[];
-    is_main_block_present?: boolean;
-    imports?: { [key: string]: Import[] };
-    is_standalone_file?: boolean;
-    success: boolean;
-    error?: string;
-}
 
 const fileData: { [key: string]: CodeResponse } = {};
 
@@ -44,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.workspaceState.update('processedFiles', allFiles);
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) => 
-        sendFileToServer(filePath, content)
+        sendFileToServer(filePath, content, fileData)
     );
     await Promise.all(fileSendPromises);
 
@@ -54,54 +31,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.ViewColumn.One,
         {}
     );
-    console.log(fileData);
     panel.webview.html = getWebviewContent(fileData);
-}
-
-function traverseFolder(
-    folderPath: string,
-    allFiles: { [key: string]: string },
-    newFiles: { [key: string]: string }
-) {
-    const files = fs.readdirSync(folderPath);
-    for (const file of files) {
-        const filePath = path.join(folderPath, file);
-        const stats = fs.statSync(filePath);
-
-        if (stats.isDirectory()) {
-            traverseFolder(filePath, allFiles, newFiles);
-        } else {
-            if (filePath.endsWith('.py') && !filePath.endsWith('.pyc') && !allFiles[filePath]) {
-                const content = fs.readFileSync(filePath, 'utf-8');
-                allFiles[filePath] = content;
-                newFiles[filePath] = content;
-            }
-        }
-    }
-}
-
-async function sendFileToServer(filePath: string, content: string) {
-    try {
-        const fileName = path.basename(filePath);
-        const response = await axios.post<CodeResponse>('http://127.0.0.1:8000/analyze-ast', { code: content });
-        const responseData = response.data;
-        if (responseData.success) {
-            console.log(`File ${fileName} sent successfully.`);
-            fileData[filePath] = responseData;
-        } else {
-            console.error(`Error in file ${fileName}: ${responseData.error}`);
-            fileData[filePath] = {
-                success: false,
-                error: responseData.error || "Unknown error",
-            };
-        }
-    } catch (e) {
-        console.error(`Failed to send file ${filePath}:`, e);
-        fileData[filePath] = {
-            success: false,
-            error: "Failed to communicate with server" + e,
-        };
-    }
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
