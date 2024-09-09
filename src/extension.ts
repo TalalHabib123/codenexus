@@ -2,9 +2,11 @@ import * as vscode from 'vscode';
 import { CodeResponse } from './types/api';
 import { sendFileToServer } from './utils/api/ast_server';
 import { traverseFolder } from './utils/codebase_analysis/folder_analysis';
+import { buildDependencyGraph, topologicalSort } from './utils/codebase_analysis/graph/dependency';
 
 
 const fileData: { [key: string]: CodeResponse } = {};
+
 
 export async function activate(context: vscode.ExtensionContext) {
     const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -32,6 +34,9 @@ export async function activate(context: vscode.ExtensionContext) {
         {}
     );
     panel.webview.html = getWebviewContent(fileData);
+    // const dependencyGraph = buildDependencyGraph(fileData);
+    // const sortedFiles = topologicalSort(dependencyGraph);
+
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {

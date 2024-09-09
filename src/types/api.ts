@@ -1,6 +1,7 @@
 interface GlobalVariable {
     variable_name: string;
     variable_type: string;
+    class_or_function_name?: string;
 }
 
 interface Import {
