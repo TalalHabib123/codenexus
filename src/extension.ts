@@ -1,23 +1,29 @@
 import * as vscode from 'vscode';
 import { CodeResponse } from './types/api';
+import { FolderStructure } from './types/folder';
 import { sendFileToServer } from './utils/api/ast_server';
-import { traverseFolder } from './utils/codebase_analysis/folder_analysis';
-import { buildDependencyGraph, topologicalSort } from './utils/codebase_analysis/graph/dependency';
+import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
+// import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
 
 
 const fileData: { [key: string]: CodeResponse } = {};
+
+const folderStructureData: { [key: string]: FolderStructure } = {};
+
 
 
 export async function activate(context: vscode.ExtensionContext) {
     const workspaceFolders = vscode.workspace.workspaceFolders;
 
     const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
+    const folders = workspaceFolders?.map(folder => folder.uri.fsPath) || [];
     const allFiles: { [key: string]: string } = { ...processedFiles };
     const newFiles: { [key: string]: string } = {};
 
     if (workspaceFolders) {
         for (const folder of workspaceFolders) {
             traverseFolder(folder.uri.fsPath, allFiles, newFiles);
+            folderStructureData[folder.uri.fsPath] = folderStructure(folder.uri.fsPath);
         }
     }
 
@@ -27,15 +33,21 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     await Promise.all(fileSendPromises);
 
-    const panel = vscode.window.createWebviewPanel(
-        'fileList',
-        'Workspace Files',
-        vscode.ViewColumn.One,
-        {}
-    );
-    panel.webview.html = getWebviewContent(fileData);
+    // const panel = vscode.window.createWebviewPanel(
+    //     'fileList',
+    //     'Workspace Files',
+    //     vscode.ViewColumn.One,
+    //     {}
+    // );
+    // panel.webview.html = getWebviewContent(fileData);
     // const dependencyGraph = buildDependencyGraph(fileData);
     // const sortedFiles = topologicalSort(dependencyGraph);
+
+    console.log("File Data: ", fileData);
+
+    // const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+
+    // console.log("Dependency Graph: ", dependencyGraph);
 
 }
 

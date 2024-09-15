@@ -1,6 +1,18 @@
-interface FileNode {
+interface UtilizedEntity {
     name: string;
-    dependencies: Set<string>; // Set of file names this file depends on
+    type: 'function' | 'class' | 'variable' | 'module';
+    source: 'Exporting' | 'Importing';
+};
+
+interface DependentNode  {
+    name: string;
+    weight: Array<UtilizedEntity>;
 }
 
-export { FileNode };
+
+interface FileNode {
+    name: string;
+    dependencies: Set<DependentNode>; 
+}
+
+export { FileNode, UtilizedEntity, DependentNode };
