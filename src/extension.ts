@@ -3,7 +3,7 @@ import { CodeResponse } from './types/api';
 import { FolderStructure } from './types/folder';
 import { sendFileToServer } from './utils/api/ast_server';
 import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
-// import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
+import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
 
 
 const fileData: { [key: string]: CodeResponse } = {};
@@ -16,7 +16,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const workspaceFolders = vscode.workspace.workspaceFolders;
 
     const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
-    const folders = workspaceFolders?.map(folder => folder.uri.fsPath) || [];
     const allFiles: { [key: string]: string } = { ...processedFiles };
     const newFiles: { [key: string]: string } = {};
 
@@ -44,6 +43,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // const sortedFiles = topologicalSort(dependencyGraph);
 
     console.log("File Data: ", fileData);
+
+    // console.log("Folder Structure Data: ", folderStructureData);
 
     // const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
 
