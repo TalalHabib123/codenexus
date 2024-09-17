@@ -7,7 +7,7 @@ function importEverything(importfilepath: string, fileData: { [key: string]: Cod
     const utilizedentities: UtilizedEntity[] = [];
 
     for (const [fileName, data] of Object.entries(fileData)) {
-        if (fileName === importfilepath) {
+        if (fileName !== importfilepath) {
             continue;
         }
         if (data.error) {
@@ -29,13 +29,11 @@ function importEverything(importfilepath: string, fileData: { [key: string]: Cod
         }
         if (data.class_details) {
             for (const classDetail of data.class_details) {
-                for (const className of Object.keys(classDetail)) {
-                    utilizedentities.push({
-                        name: className,
-                        type: 'class',
-                        source: 'Importing'
-                    });
-                }
+                utilizedentities.push({
+                    name: classDetail[Object.keys(classDetail)[0]] as string,
+                    type: 'class',
+                    source: 'Importing'
+                });
             }
         }
 
@@ -56,7 +54,7 @@ function exportEverything(exportfilepath: string, fileData: { [key: string]: Cod
     const utilizedentities: UtilizedEntity[] = [];
 
     for (const [fileName, data] of Object.entries(fileData)) {
-        if (fileName === exportfilepath) {
+        if (fileName !== exportfilepath) {
             continue;
         }
         if (data.error) {
@@ -166,7 +164,7 @@ function buildDependencyGraph(
                         dependentNode.alias = alias;
                         importdepentNode.alias = alias;
                         dependentNode.weight = importEverything(importfilepath, files);
-                        importdepentNode.weight = exportEverything(filePath, files);
+                        importdepentNode.weight = exportEverything(importfilepath, files);
                         const existingDependentNode = findDependentNodeByName(folderGraph.get(filePath)?.dependencies ?? new Set(), importfilepath);
                         const existingImportDependentNode = findDependentNodeByName(folderGraph.get(importfilepath)?.dependencies ?? new Set(), filePath);
                         if (existingDependentNode) {
@@ -281,7 +279,7 @@ function buildDependencyGraph(
                     if (importFileData)
                     {
                         dependentNode.weight = importEverything(importfilepath, files);
-                        importdepentNode.weight = exportEverything(filePath, files);
+                        importdepentNode.weight = exportEverything(importfilepath, files);
                         const existingDependentNode = findDependentNodeByName(folderGraph.get(filePath)?.dependencies ?? new Set(), importfilepath);
                         const existingImportDependentNode = findDependentNodeByName(folderGraph.get(importfilepath)?.dependencies ?? new Set(), filePath);
                         if (existingDependentNode) {
