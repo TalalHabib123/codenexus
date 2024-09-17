@@ -43,8 +43,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // const dependencyGraph = buildDependencyGraph(fileData);
     // const sortedFiles = topologicalSort(dependencyGraph);
 
-
-    console.log("File Data: ", fileData);
+    // console.log("File Data: ", fileData);
 
     // console.log("Folder Structure Data: ", folderStructureData);
 
