@@ -1,11 +1,14 @@
 interface UtilizedEntity {
     name: string;
-    type: 'function' | 'class' | 'variable' | 'module';
+    type: string;
+    alias?: string;
     source: 'Exporting' | 'Importing';
 };
 
 interface DependentNode  {
     name: string;
+    alias?: string;
+    valid: boolean;
     weight: Array<UtilizedEntity>;
 }
 

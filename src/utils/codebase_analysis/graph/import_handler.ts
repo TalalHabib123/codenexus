@@ -7,7 +7,7 @@ function verifyPath(pathArray: string[], file: string | undefined, folderStructu
         }
         folderStructureData = folderStructureData.subfolders[path];
     }
-    if (file && !folderStructureData.files.includes(file + '.py')) {    
+    if (file && !folderStructureData.files.includes(file + '.py')) {
         return false;
     }
     return true;
@@ -27,56 +27,62 @@ function getFilePath_Import(
     }
     if (nameArray[0] === '') {
         nameArray.shift();
-        if (nameArray.length === 0) {
-            return undefined;
+    }
+    if (nameArray.length === 0) {
+        return undefined;
+    }
+    else if (nameArray.length === 1) {
+        for (const file of folderStructureData.files) {
+            if (file === (nameArray[0] + '.py')) {
+                return folder + '\\' + nameArray[0] + '.py';
+            }
         }
-        else if (nameArray.length === 1) {
-            for (const file of folderStructureData.files) {
-                if (file === (nameArray[0] + '.py')) {
-                    return folder + '\\' + nameArray[0] + '.py';
+    }
+    else {
+        if (pathArray.length > 0) {
+            let tempFolderStructure = folderStructureData;
+            for (const path of pathArray) {
+                tempFolderStructure = tempFolderStructure.subfolders[path];
+            }
+            for (const path of pathArray) {
+                pathQueue.push(path);
+            }
+            for (const path of nameArray) {
+                if (tempFolderStructure.subfolders[path] === undefined) {
+                    if (tempFolderStructure.files.includes(path + '.py')) {
+                        if (pathQueue.length > 0) {
+                            return folder + '\\' + pathQueue.join('\\') + '\\' + path + '.py';
+                        }
+                        else {
+                            return folder + '\\' + path + '.py';
+                        }
+                    }
+                    else {
+                        return undefined;
+                    }
                 }
+                tempFolderStructure = tempFolderStructure.subfolders[path];
+                pathQueue.push(path);
             }
         }
         else {
-            if (pathArray.length > 0) {
-                let tempFolderStructure = folderStructureData;
-                for (const path of pathArray) {
-                    tempFolderStructure = tempFolderStructure.subfolders[path];
-                }
-                for (const path of pathArray) {
-                    pathQueue.push(path);
-                }
-                for (const path of nameArray) {
-                    if (tempFolderStructure.subfolders[path] === undefined) {
-                        if (tempFolderStructure.files.includes(path + '.py')) {
-                            if (pathQueue.length > 0) {
-                                return folder + '\\' + pathQueue.join('\\') + '\\' + path + '.py';
-                            }
-                            else {
-                                return folder + '\\' + path + '.py';
-                            }
+            for (const path of nameArray) {
+                if (folderStructureData.subfolders[path] === undefined) {
+                    if (folderStructureData.files.includes(path + '.py')) {
+                        if (pathQueue.length > 0) {
+                            return folder + '\\' + pathQueue.join('\\') + '\\' + path + '.py';
                         }
                         else {
-                            return undefined;
-                        }
-                    }
-                    tempFolderStructure = tempFolderStructure.subfolders[path];
-                    pathQueue.push(path);
-                }
-            }
-            else {
-                for (const path of nameArray) {
-                    if (folderStructureData.subfolders[path] === undefined) {
-                        if (folderStructureData.files.includes(path + '.py')) {
                             return folder + '\\' + path + '.py';
                         }
-                        else {
-                            return undefined;
-                        }
+
                     }
-                    folderStructureData = folderStructureData.subfolders[path];
-                    pathQueue.push(path);
+                    else {
+                        return undefined;
+                    }
                 }
+                folderStructureData = folderStructureData.subfolders[path];
+                pathQueue.push(path);
             }
         }
     }
@@ -87,11 +93,10 @@ function getFilePath_From(
     folder: string,
     name: string,
     modulePath: string,
-    folderStructureData: FolderStructure ,
-    pathArray: string[] 
+    folderStructureData: FolderStructure,
+    pathArray: string[]
 ): string | undefined {
     const pathQueue: string[] = [];
-    // pathArray.pop();
     const modulePathArray = modulePath.split('.');
     if (modulePathArray.length === 0) {
         return undefined;
@@ -132,7 +137,7 @@ function getFilePath_From(
             }
         }
 
-        if (flag === true){
+        if (flag === true) {
             for (const module of pathArray) {
                 if (module !== pathQueue[0]) {
                     pathQueue.unshift(module);
@@ -238,4 +243,4 @@ function getFilePath_From(
 }
 
 
-export { getFilePath_From };
+export { getFilePath_From, getFilePath_Import };
