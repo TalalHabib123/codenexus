@@ -33,23 +33,8 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     await Promise.all(fileSendPromises);
 
-    // const panel = vscode.window.createWebviewPanel(
-    //     'fileList',
-    //     'Workspace Files',
-    //     vscode.ViewColumn.One,
-    //     {}
-    // );
-    // panel.webview.html = getWebviewContent(fileData);
-    // const dependencyGraph = buildDependencyGraph(fileData);
-    // const sortedFiles = topologicalSort(dependencyGraph);
-
-    console.log("File Data: ", fileData);
-
-    // console.log("Folder Structure Data: ", folderStructureData);
-
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
 
-    console.log("Dependency Graph: ", dependencyGraph);
 
 }
 

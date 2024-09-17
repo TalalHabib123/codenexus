@@ -12,6 +12,7 @@ interface Import {
 }
 
 interface CodeResponse {
+    code?: string;
     ast?: string;
     function_names?: string[];
     class_details?: { [key: string]: string | string[] }[];

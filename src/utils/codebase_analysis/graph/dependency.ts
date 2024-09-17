@@ -41,7 +41,7 @@ function importEverything(importfilepath: string, fileData: { [key: string]: Cod
             for (const globalVariable of data.global_variables) {
                 utilizedentities.push({
                     name: globalVariable.variable_name,
-                    type: globalVariable.variable_type,
+                    type: 'variable',
                     source: 'Importing'
                 });
             }
@@ -92,7 +92,7 @@ function exportEverything(exportfilepath: string, fileData: { [key: string]: Cod
             for (const globalVariable of data.global_variables) {
                 utilizedentities.push({
                     name: globalVariable.variable_name,
-                    type: globalVariable.variable_type,
+                    type: 'variable',
                     source: 'Exporting'
                 });
             }
@@ -210,7 +210,7 @@ function buildDependencyGraph(
                         if (importFileData.global_variables) {
                             for (const globalVariable of importFileData.global_variables) {
                                 if (globalVariable.variable_name === name) {
-                                    type = globalVariable.variable_type;
+                                    type = 'variable';
                                     break;
                                 }
                             }
