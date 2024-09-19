@@ -28,22 +28,21 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     context.workspaceState.update('processedFiles', allFiles);
-    const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) => 
+    const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
         sendFileToServer(filePath, content, fileData)
     );
     await Promise.all(fileSendPromises);
 
     let jsonRes = JSON.stringify(fileData, null, 2);
     let jsonCode = JSON.parse(jsonRes);
-    let asts = Object.keys(jsonCode).map(key => 
-    {
-        let ast = JSON.parse(jsonCode[key].ast); 
+    let asts = Object.keys(jsonCode).map(key => {
+        let ast = JSON.parse(jsonCode[key].ast);
         let filePath = key;
-        let fileContent = allFiles[filePath]
-        return {ast, filePath, fileContent}
+        let fileContent = allFiles[filePath];
+        return { ast, filePath, fileContent };
     });
     console.log(asts);
-    detectCodeSmells(asts);    
+    detectCodeSmells(asts);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
 

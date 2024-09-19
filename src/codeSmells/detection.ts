@@ -12,7 +12,7 @@ export async function detectCodeSmells(asts: { ast: any, filePath: string, fileC
     const camelCasePattern = /^[a-z]+([A-Z][a-z]*)*$/;
 
     const traverseAST = (node: any, declaredVars: string[], usedVars: string[], context: any = { depth: 0 }) => {
-        if (!node || typeof node !== "object") return;
+        if (!node || typeof node !== "object") { return; };
 
         // Detect variable declarations (e.g., "x = 5")
         if (node._type === "Assign" && node.targets && node.targets.length > 0) {
