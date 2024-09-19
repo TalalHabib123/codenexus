@@ -4,7 +4,7 @@ import { FolderStructure } from './types/folder';
 import { sendFileToServer } from './utils/api/ast_server';
 import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
 import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
-
+import { detectCodeSmells } from './codeSmells/detection';
 
 const fileData: { [key: string]: CodeResponse } = {};
 
@@ -32,6 +32,18 @@ export async function activate(context: vscode.ExtensionContext) {
         sendFileToServer(filePath, content, fileData)
     );
     await Promise.all(fileSendPromises);
+
+    let jsonRes = JSON.stringify(fileData, null, 2);
+    let jsonCode = JSON.parse(jsonRes);
+    let asts = Object.keys(jsonCode).map(key => 
+    {
+        let ast = JSON.parse(jsonCode[key].ast); 
+        let filePath = key;
+        let fileContent = allFiles[filePath]
+        return {ast, filePath, fileContent}
+    });
+    console.log(asts);
+    detectCodeSmells(asts);    
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
 
