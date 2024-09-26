@@ -5,7 +5,7 @@ import { sendFileToServer } from './utils/api/ast_server';
 import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
 import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
 import { detectCodeSmells } from './codeSmells/detection';
-
+import { showBasicUI } from './utils/ui/ui';
 const fileData: { [key: string]: CodeResponse } = {};
 
 const folderStructureData: { [key: string]: FolderStructure } = {};
@@ -13,6 +13,7 @@ const folderStructureData: { [key: string]: FolderStructure } = {};
 
 
 export async function activate(context: vscode.ExtensionContext) {
+    showBasicUI();
     const workspaceFolders = vscode.workspace.workspaceFolders;
 
     const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});

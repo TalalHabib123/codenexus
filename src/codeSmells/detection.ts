@@ -30,7 +30,6 @@ export async function detectCodeSmells(asts: { ast: any, filePath: string, fileC
                 }
             }
         }
-        // Detect variable usage (e.g., using "x")
         else if (node._type === "Name" && node.ctx && node.ctx._type === "Load") {
             usedVars.push(node.id);
         }
