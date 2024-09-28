@@ -2,9 +2,18 @@ import { FileNode, UtilizedEntity, DependentNode } from "../../../types/graph";
 import { FolderStructure } from "../../../types/folder";
 import { CodeResponse } from "../../../types/api";
 import { getFilePath_From, getFilePath_Import } from "./import_handler";
+import path from "path";
 
-function importEverything(importfilepath: string, fileData: { [key: string]: CodeResponse }): UtilizedEntity[] {
+function importEverything(importfilepath: string, fileData: { [key: string]: CodeResponse }, alias: string): UtilizedEntity[] {
     const utilizedentities: UtilizedEntity[] = [];
+    let append_name = "";
+    if (alias !== "") {
+        append_name = alias + ".";
+    }
+    else 
+    {
+        append_name = path.basename(importfilepath).replace(".py", ".");
+    }
 
     for (const [fileName, data] of Object.entries(fileData)) {
         if (fileName !== importfilepath) {
@@ -21,7 +30,7 @@ function importEverything(importfilepath: string, fileData: { [key: string]: Cod
         if (data.function_names) {
             for (const functionName of data.function_names) {
                 utilizedentities.push({
-                    name: functionName,
+                    name: append_name + functionName,
                     type: 'function',
                     source: 'Importing'
                 });
@@ -30,7 +39,7 @@ function importEverything(importfilepath: string, fileData: { [key: string]: Cod
         if (data.class_details) {
             for (const classDetail of data.class_details) {
                 utilizedentities.push({
-                    name: classDetail[Object.keys(classDetail)[0]] as string,
+                    name: append_name + classDetail[Object.keys(classDetail)[0]] as string,
                     type: 'class',
                     source: 'Importing'
                 });
@@ -40,7 +49,7 @@ function importEverything(importfilepath: string, fileData: { [key: string]: Cod
         if (data.global_variables) {
             for (const globalVariable of data.global_variables) {
                 utilizedentities.push({
-                    name: globalVariable.variable_name,
+                    name: append_name + globalVariable.variable_name,
                     type: 'variable',
                     source: 'Importing'
                 });
@@ -50,8 +59,16 @@ function importEverything(importfilepath: string, fileData: { [key: string]: Cod
 
     return utilizedentities;
 }
-function exportEverything(exportfilepath: string, fileData: { [key: string]: CodeResponse }): UtilizedEntity[] {
+function exportEverything(exportfilepath: string, fileData: { [key: string]: CodeResponse }, alias: string): UtilizedEntity[] {
     const utilizedentities: UtilizedEntity[] = [];
+    let append_name = "";
+    if (alias !== "") {
+        append_name = alias + ".";
+    }
+    else 
+    {
+        append_name = path.basename(exportfilepath).replace(".py", ".");
+    }
 
     for (const [fileName, data] of Object.entries(fileData)) {
         if (fileName !== exportfilepath) {
@@ -72,7 +89,7 @@ function exportEverything(exportfilepath: string, fileData: { [key: string]: Cod
                     continue;
                 }
                 utilizedentities.push({
-                    name: functionName,
+                    name: append_name + functionName,
                     type: 'function',
                     source: 'Exporting'
                 });
@@ -81,7 +98,7 @@ function exportEverything(exportfilepath: string, fileData: { [key: string]: Cod
         if (data.class_details) {
             for (const classDetail of data.class_details) {
                 utilizedentities.push({
-                    name: classDetail[Object.keys(classDetail)[0]] as string,
+                    name: append_name + classDetail[Object.keys(classDetail)[0]] as string,
                     type: 'class',
                     source: 'Exporting'
                 });
@@ -91,7 +108,7 @@ function exportEverything(exportfilepath: string, fileData: { [key: string]: Cod
         if (data.global_variables) {
             for (const globalVariable of data.global_variables) {
                 utilizedentities.push({
-                    name: globalVariable.variable_name,
+                    name: append_name + globalVariable.variable_name,
                     type: 'variable',
                     source: 'Exporting'
                 });
@@ -114,7 +131,7 @@ function buildDependencyGraph(
     fileData: { [key: string]: CodeResponse },
     folderStructureData: { [key: string]: FolderStructure },
     workspaceFolders: string[]
-): { [key: string]: Map<string, FileNode> } | undefined {
+): { [key: string]: Map<string, FileNode> } {
     const graph: { [key: string]: Map<string, FileNode> } = {};
 
     function separate_files(workspaceFolder: string, fileData: { [key: string]: CodeResponse }) {
@@ -163,8 +180,8 @@ function buildDependencyGraph(
                     if (importFilepathArray[-1] === name + '.py' && importFileData) {
                         dependentNode.alias = alias;
                         importdepentNode.alias = alias;
-                        dependentNode.weight = importEverything(importfilepath, files);
-                        importdepentNode.weight = exportEverything(importfilepath, files);
+                        dependentNode.weight = importEverything(importfilepath, files, alias);
+                        importdepentNode.weight = exportEverything(importfilepath, files, alias);
                         const existingDependentNode = findDependentNodeByName(folderGraph.get(filePath)?.dependencies ?? new Set(), importfilepath);
                         const existingImportDependentNode = findDependentNodeByName(folderGraph.get(importfilepath)?.dependencies ?? new Set(), filePath);
                         if (existingDependentNode) {
@@ -278,8 +295,8 @@ function buildDependencyGraph(
                     const importdepentNode: DependentNode = { name: filePath, alias: alias,valid: true, weight: [] as UtilizedEntity[] };
                     if (importFileData)
                     {
-                        dependentNode.weight = importEverything(importfilepath, files);
-                        importdepentNode.weight = exportEverything(importfilepath, files);
+                        dependentNode.weight = importEverything(importfilepath, files, alias);
+                        importdepentNode.weight = exportEverything(importfilepath, files, alias);
                         const existingDependentNode = findDependentNodeByName(folderGraph.get(filePath)?.dependencies ?? new Set(), importfilepath);
                         const existingImportDependentNode = findDependentNodeByName(folderGraph.get(importfilepath)?.dependencies ?? new Set(), filePath);
                         if (existingDependentNode) {

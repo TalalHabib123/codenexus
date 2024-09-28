@@ -48,7 +48,6 @@ const responseHandler = async (
 
 const detection_api = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
     try {
-      
         const detectionTasks = [
             detectMagicNumbers(filePath, content, fileData),
             detectDuplicateCode(filePath, content, fileData),

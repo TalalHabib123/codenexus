@@ -33,4 +33,13 @@ interface Response{
     error?:string
 }
 
-export { CodeResponse, Response };
+interface DeadCodeResponse {
+    function_names?: string[];
+    class_details?: { [key: string]: string | string[] }[];
+    global_variables?: string[];
+    imports?: { [key: string]: { [key: string]: any }[] };
+    success: boolean;
+    error?: string;
+}
+
+export { CodeResponse, DeadCodeResponse, Response };
