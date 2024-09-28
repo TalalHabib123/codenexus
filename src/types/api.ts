@@ -1,3 +1,5 @@
+import { interfaces } from "mocha";
+
 interface GlobalVariable {
     variable_name: string;
     variable_type: string;
@@ -24,4 +26,11 @@ interface CodeResponse {
     error?: string;
 }
 
-export { CodeResponse };
+interface Response{
+    fileName: string;
+    data: {};
+    success: boolean;
+    error?:string
+}
+
+export { CodeResponse, Response };

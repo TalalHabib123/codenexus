@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { CodeResponse } from './types/api';
 import { FolderStructure } from './types/folder';
-import { sendFileToServer } from './utils/api/ast_server';
+import { sendFileToServer, detection_api } from './utils/api/ast_server';
 import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
 import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
 import { detectCodeSmells } from './codeSmells/detection';
@@ -30,20 +30,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.workspaceState.update('processedFiles', allFiles);
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
-        sendFileToServer(filePath, content, fileData)
+        // sendFileToServer(filePath, content, fileData)
+        detection_api(filePath, content, fileData)
     );
     await Promise.all(fileSendPromises);
-
-    let jsonRes = JSON.stringify(fileData, null, 2);
-    let jsonCode = JSON.parse(jsonRes);
-    let asts = Object.keys(jsonCode).map(key => {
-        let ast = JSON.parse(jsonCode[key].ast);
-        let filePath = key;
-        let fileContent = allFiles[filePath];
-        return { ast, filePath, fileContent };
-    });
-    console.log(asts);
-    detectCodeSmells(asts);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
 
@@ -66,3 +56,24 @@ function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
 
 
 export function deactivate() { }
+
+
+// Event handler functions
+const fileWatcherEventHandler = (context: vscode.ExtensionContext) => {
+    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, false, false);
+
+    fileWatcher.onDidCreate(uri => {
+        console.log(`File created: ${uri.fsPath}`);
+    });
+
+    fileWatcher.onDidDelete(uri => {
+        console.log(`File deleted: ${uri.fsPath}`);
+    });
+
+    fileWatcher.onDidChange(uri => {
+        console.log(`File changed: ${uri.fsPath}`);
+    });
+    context.subscriptions.push(fileWatcher);
+};
+
+
