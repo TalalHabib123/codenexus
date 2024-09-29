@@ -2,6 +2,7 @@ import * as path from 'path';
 import axios from 'axios';
 import { CodeResponse, Response } from '../../types/api';
 import { BASE_URL } from './api';
+import { addDiagnostic } from '../ui/problemsTab';
 
 // Generic error handler for failed requests
 const handleRequestError = (filePath: string, content: string, error: any, fileData: { [key: string]: CodeResponse }) => {
@@ -33,9 +34,10 @@ const responseHandler = async (
     fileName: string
 ) => {
     console.log(responseData);
-    if (responseData.success) {
+    console.log('response data:', responseData);
+    if (responseData['success']) {
         console.log(`File ${fileName} sent successfully.`);
-        fileData[filePath] = { ...responseData, code: content };
+        return JSON.parse(responseData['data'] as string);
     } else {
         console.error(`Error in file ${fileName}: ${responseData.error}`);
         fileData[filePath] = {
@@ -49,11 +51,11 @@ const responseHandler = async (
 const detection_api = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
     try {
         const detectionTasks = [
-            detectMagicNumbers(filePath, content, fileData),
+            detectMagicNumbers(filePath, content, fileData), //DONE
             detectDuplicateCode(filePath, content, fileData),
             detectUnusedVariables(filePath, content, fileData),
-            detectLongParameterList(filePath, content, fileData),
-            detectNamingConventions(filePath, content, fileData),
+            detectLongParameterList(filePath, content, fileData), //DONE
+            // detectNamingConventions(filePath, content, fileData),
         ];
 
         Promise.all(detectionTasks);
@@ -65,18 +67,27 @@ const detection_api = async (filePath: string, content: string, fileData: { [key
 // Detection function templates
 const detectMagicNumbers = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
     await postToServer(filePath, content, fileData, '/magic-numbers');
+    addDiagnostic('Uh Oh! Magic Numbers detected', filePath);
 };
 
 const detectDuplicateCode = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
     await postToServer(filePath, content, fileData, '/duplicated-code');
+    addDiagnostic('Uh Oh! Duplicate Code detected', filePath);
 };
 
 const detectUnusedVariables = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
     await postToServer(filePath, content, fileData, '/unused-variables');
+    addDiagnostic('Uh Oh! Unused Variables detected', filePath);
 };
 
 const detectLongParameterList = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
-    await postToServer(filePath, content, fileData, '/parameter-list');
+    let longParams = await postToServer(filePath, content, fileData, '/parameter-list');
+    console.log("long params:" , longParams);
+    Object.entries(longParams).map(([func, val]) => {
+        if (val){
+            addDiagnostic(`Uh Oh! Function ${func} has a long parameter list`, filePath);
+        }
+    });
 };
 
 const detectNamingConventions = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
@@ -93,8 +104,8 @@ const postToServer = async (
     try {
         const fileName = path.basename(filePath);
         const response = await axios.post<Response>(`${BASE_URL}${endpoint}`, { code: content });
-        console.log("Response: ",response.data['data']);
-        await responseHandler(response.data, fileData, filePath, content, fileName);
+        console.log("RESPONSE" , response);
+        return await responseHandler(response.data, fileData, filePath, content, fileName);
     } catch (e) {
         handleRequestError(filePath, content, e, fileData);
     }

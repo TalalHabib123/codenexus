@@ -30,7 +30,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.workspaceState.update('processedFiles', allFiles);
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
-        // sendFileToServer(filePath, content, fileData)
         detection_api(filePath, content, fileData)
     );
     await Promise.all(fileSendPromises);
