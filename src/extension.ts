@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
-import { CodeResponse } from './types/api';
+import { CodeResponse, DetectionResponse } from './types/api';
 import { FolderStructure } from './types/folder';
 import { sendFileToServer, detection_api } from './utils/api/ast_server';
 import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
 import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
 import { detectCodeSmells } from './codeSmells/detection';
 import { showBasicUI } from './utils/ui/ui';
-const fileData: { [key: string]: CodeResponse } = {};
 
+
+const fileData: { [key: string]: CodeResponse } = {};
+const FileDetectionData  : { [key: string]: DetectionResponse } = {};
 const folderStructureData: { [key: string]: FolderStructure } = {};
 
 
@@ -30,14 +32,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.workspaceState.update('processedFiles', allFiles);
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
-        // sendFileToServer(filePath, content, fileData)
-        detection_api(filePath, content, fileData)
+        sendFileToServer(filePath, content, fileData)
     );
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    await detectCodeSmells(dependencyGraph, fileData);
-    console.log(dependencyGraph);
+    // await detectCodeSmells(dependencyGraph, fileData);
+    // console.log(dependencyGraph);
+
+    const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
+        detection_api(filePath, content, fileData, FileDetectionData)
+    );
+
+    await Promise.all(detectionTasksPromises);
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
