@@ -1,6 +1,6 @@
-import * as path from 'path'; 
+import * as path from 'path';
 import axios from 'axios';
-import { CodeResponse, Response } from '../../types/api';
+import { CodeResponse, Response, DetectionResponse } from '../../types/api';
 import { BASE_URL } from './api';
 import { addDiagnostic } from '../ui/problemsTab';
 
@@ -48,14 +48,16 @@ const responseHandler = async (
     }
 };
 
-const detection_api = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
+const detection_api = async (filePath: string, content: string,
+    fileData: { [key: string]: CodeResponse },
+    detectionData: { [key: string]: DetectionResponse }) => {
     try {
         const detectionTasks = [
-            detectMagicNumbers(filePath, content, fileData), //DONE
-            detectDuplicateCode(filePath, content, fileData),
-            detectUnusedVariables(filePath, content, fileData),
-            detectLongParameterList(filePath, content, fileData), //DONE
-            // detectNamingConventions(filePath, content, fileData),
+            detectMagicNumbers(filePath, content, fileData, detectionData),
+            detectDuplicateCode(filePath, content, fileData, detectionData),
+            detectUnusedVariables(filePath, content, fileData, detectionData),
+            detectLongParameterList(filePath, content, fileData, detectionData),
+            detectNamingConventions(filePath, content, fileData, detectionData),
         ];
 
         Promise.all(detectionTasks);
@@ -65,23 +67,30 @@ const detection_api = async (filePath: string, content: string, fileData: { [key
 };
 
 // Detection function templates
-const detectMagicNumbers = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
-    await postToServer(filePath, content, fileData, '/magic-numbers');
-    addDiagnostic('Uh Oh! Magic Numbers detected', filePath);
+const detectMagicNumbers = async (filePath: string, content: string,
+    fileData: { [key: string]: CodeResponse },
+    detectionData: { [key: string]: DetectionResponse }) => {
+    await postToServer(filePath, content, fileData, '/magic-numbers', detectionData);
 };
 
-const detectDuplicateCode = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
-    await postToServer(filePath, content, fileData, '/duplicated-code');
+const detectDuplicateCode = async (filePath: string, content: string,
+    fileData: { [key: string]: CodeResponse },
+    detectionData: { [key: string]: DetectionResponse }) => {
+    await postToServer(filePath, content, fileData, '/duplicated-code', detectionData);
     addDiagnostic('Uh Oh! Duplicate Code detected', filePath);
 };
 
-const detectUnusedVariables = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
-    await postToServer(filePath, content, fileData, '/unused-variables');
+const detectUnusedVariables = async (filePath: string, content: string,
+    fileData: { [key: string]: CodeResponse },
+    detectionData: { [key: string]: DetectionResponse }) => {
+    await postToServer(filePath, content, fileData, '/unused-variables', detectionData);
     addDiagnostic('Uh Oh! Unused Variables detected', filePath);
 };
 
-const detectLongParameterList = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
-    let longParams = await postToServer(filePath, content, fileData, '/parameter-list');
+const detectLongParameterList = async (filePath: string, content: string,
+    fileData: { [key: string]: CodeResponse },
+    detectionData: { [key: string]: DetectionResponse }) => {
+    let longParams = await postToServer(filePath, content, fileData, '/parameter-list', detectionData);
     console.log("long params:" , longParams);
     Object.entries(longParams).map(([func, val]) => {
         if (val){
@@ -90,22 +99,45 @@ const detectLongParameterList = async (filePath: string, content: string, fileDa
     });
 };
 
-const detectNamingConventions = async (filePath: string, content: string, fileData: { [key: string]: CodeResponse }) => {
-    await postToServer(filePath, content, fileData, '/naming-convention');
+const detectNamingConventions = async (filePath: string, content: string,
+    fileData: { [key: string]: CodeResponse },
+    detectionData: { [key: string]: DetectionResponse }) => {
+    await postToServer(filePath, content, fileData, '/naming-convention', detectionData);
+    
 };
 
-// Reusable server post function for all detection types
+const detectionResponseHandler = async (
+    responseData: Response,
+    filePath: string,
+    fileName: string,
+    endpoint: string,
+    detectionData: { [key: string]: DetectionResponse }
+) => {
+    console.log(responseData);
+    if (responseData.success) {
+        console.log(`File ${fileName} sent successfully.`);
+        detectionData[filePath] = { ...responseData };
+    } else {
+        console.error(`Error in file ${fileName}: ${responseData.error}`);
+        detectionData[filePath] = {
+            success: false,
+            error: responseData.error || 'Unknown error',
+        };
+    }
+};
+
 const postToServer = async (
     filePath: string,
     content: string,
     fileData: { [key: string]: CodeResponse },
-    endpoint: string
+    endpoint: string,
+    detectionData: { [key: string]: DetectionResponse }
 ) => {
     try {
         const fileName = path.basename(filePath);
         const response = await axios.post<Response>(`${BASE_URL}${endpoint}`, { code: content });
-        console.log("RESPONSE" , response);
         return await responseHandler(response.data, fileData, filePath, content, fileName);
+        // await detectionResponseHandler(response.data, filePath, fileName, endpoint, detectionData);
     } catch (e) {
         handleRequestError(filePath, content, e, fileData);
     }

@@ -26,6 +26,23 @@ interface CodeResponse {
     error?: string;
 }
 
+interface SubDetectionResponse {
+    success: boolean;
+    error?: string;
+    data?: string[]; 
+}
+
+interface DetectionResponse {
+    magic_numbers?: SubDetectionResponse;
+    duplicated_code?: SubDetectionResponse;
+    unused_variables?: SubDetectionResponse;
+    long_parameter_list?: SubDetectionResponse;
+    naming_convention?: SubDetectionResponse;
+    success: boolean;
+    error?: string;  
+}
+
+
 interface Response{
     fileName: string;
     data: {};
@@ -42,4 +59,4 @@ interface DeadCodeResponse {
     error?: string;
 }
 
-export { CodeResponse, DeadCodeResponse, Response };
+export { CodeResponse, DeadCodeResponse, Response, DetectionResponse };
