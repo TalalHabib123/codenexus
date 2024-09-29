@@ -8,14 +8,16 @@ import { detectCodeSmells } from './codeSmells/detection';
 
 
 const fileData: { [key: string]: CodeResponse } = {};
-const FileDetectionData  : { [key: string]: DetectionResponse } = {};
+const FileDetectionData: { [key: string]: DetectionResponse } = {};
 const folderStructureData: { [key: string]: FolderStructure } = {};
 
 
 
+
 export async function activate(context: vscode.ExtensionContext) {
-    
+
     const workspaceFolders = vscode.workspace.workspaceFolders;
+
 
     const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
     const folders = workspaceFolders?.map(folder => folder.uri.fsPath) || [];
@@ -36,14 +38,13 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    // await detectCodeSmells(dependencyGraph, fileData);
-    // console.log(dependencyGraph);
 
     // const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
     //     detection_api(filePath, content, fileData, FileDetectionData)
     // );
 
     // await Promise.all(detectionTasksPromises);
+    // await detectCodeSmells(dependencyGraph, fileData);
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
