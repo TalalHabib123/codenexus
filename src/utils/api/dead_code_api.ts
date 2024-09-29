@@ -12,6 +12,7 @@ async function sendFileForDeadCodeAnalysis(filePath: string,
         const fileName = path.basename(filePath);
         const response = await axios.post<DeadCodeResponse>(`${BASE_URL}/dead-code`, { code: content, function_names, global_variables });
         const responseData = response.data;
+        console.log(responseData);
         if (responseData.success) {
             console.log(`File ${fileName} sent successfully.`);
             fileData[filePath] = {

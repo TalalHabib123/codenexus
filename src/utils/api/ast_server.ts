@@ -23,9 +23,11 @@ async function sendFileToServer(filePath: string, content: string, fileData: { [
         if (responseData.success) {
             console.log(`File ${fileName} sent successfully.`);
             fileData[filePath] = responseData;
+            fileData[filePath].code = content;
         } else {
             console.error(`Error in file ${fileName}: ${responseData.error}`);
             fileData[filePath] = {
+                code: content,
                 success: false,
                 error: responseData.error || "Unknown error",
             };
@@ -33,6 +35,7 @@ async function sendFileToServer(filePath: string, content: string, fileData: { [
     } catch (e) {
         console.error(`Failed to send file ${filePath}:`, e);
         fileData[filePath] = {
+            code: content,
             success: false,
             error: "Failed to communicate with server" + e,
         };

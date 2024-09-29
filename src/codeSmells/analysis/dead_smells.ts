@@ -9,6 +9,8 @@ async function getDeadCodeSmells(
 ) {
     for (const [filePath, data] of Object.entries(fileData)) {
         if (data.error || !data.code || data.code === "") {
+            console.log(data);
+            console.log('Error in file:', filePath);    
             DeadCodeData[filePath] = {
                 success: false,
                 error: data.error
@@ -20,6 +22,6 @@ async function getDeadCodeSmells(
         await sendFileForDeadCodeAnalysis(filePath, data.code, function_names, global_variables, DeadCodeData);
     }
     return DeadCodeData;
-} 
+}
 
 export { getDeadCodeSmells };

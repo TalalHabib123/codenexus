@@ -36,7 +36,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    await detectCodeSmells(dependencyGraph, fileData);
+    // await detectCodeSmells(dependencyGraph, fileData);
     // console.log(dependencyGraph);
 
     // const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
