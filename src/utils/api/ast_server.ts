@@ -18,10 +18,24 @@ const handleRequestError = (filePath: string, content: string, error: any, fileD
 async function sendFileToServer(filePath: string, content: string, fileData: { [key: string]: CodeResponse }) {
     try {
         const fileName = path.basename(filePath);
-        const response = await axios.post<Response>(`${BASE_URL}/analyze-ast`, { code: content });
-        await responseHandler(response.data, fileData, filePath, content, fileName);
+        const response = await axios.post<CodeResponse>(`${BASE_URL}/analyze-ast`, { code: content });
+        const responseData = response.data;
+        if (responseData.success) {
+            console.log(`File ${fileName} sent successfully.`);
+            fileData[filePath] = responseData;
+        } else {
+            console.error(`Error in file ${fileName}: ${responseData.error}`);
+            fileData[filePath] = {
+                success: false,
+                error: responseData.error || "Unknown error",
+            };
+        }
     } catch (e) {
-        handleRequestError(filePath, content, e, fileData);
+        console.error(`Failed to send file ${filePath}:`, e);
+        fileData[filePath] = {
+            success: false,
+            error: "Failed to communicate with server" + e,
+        };
     }
 }
 
@@ -91,9 +105,9 @@ const detectLongParameterList = async (filePath: string, content: string,
     fileData: { [key: string]: CodeResponse },
     detectionData: { [key: string]: DetectionResponse }) => {
     let longParams = await postToServer(filePath, content, fileData, '/parameter-list', detectionData);
-    console.log("long params:" , longParams);
+    console.log("long params:", longParams);
     Object.entries(longParams).map(([func, val]) => {
-        if (val){
+        if (val) {
             addDiagnostic(`Uh Oh! Function ${func} has a long parameter list`, filePath);
         }
     });
@@ -103,7 +117,7 @@ const detectNamingConventions = async (filePath: string, content: string,
     fileData: { [key: string]: CodeResponse },
     detectionData: { [key: string]: DetectionResponse }) => {
     await postToServer(filePath, content, fileData, '/naming-convention', detectionData);
-    
+
 };
 
 const detectionResponseHandler = async (
