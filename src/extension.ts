@@ -38,13 +38,14 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    console.log(dependencyGraph);
 
     // const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
     //     detection_api(filePath, content, fileData, FileDetectionData)
     // );
 
     // await Promise.all(detectionTasksPromises);
-    // await detectCodeSmells(dependencyGraph, fileData);
+    await detectCodeSmells(dependencyGraph, fileData, folders);
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
