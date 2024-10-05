@@ -10,7 +10,7 @@ async function sendFileForDeadCodeAnalysis(filePath: string,
     fileData: { [key: string]: DeadCodeResponse }) {
     try {
         const fileName = path.basename(filePath);
-        const response = await axios.post<DeadCodeResponse>(`${BASE_URL}/dead-code`, { code: content, function_names, global_variables });
+        const response = await axios.post<DeadCodeResponse>(`${BASE_URL}/detection/dead-code`, { code: content, function_names, global_variables });
         const responseData = response.data;
         if (responseData.success) {
             console.log(`File ${fileName} sent successfully.`);
@@ -35,7 +35,7 @@ async function sendFileForDeadCodeAnalysis(filePath: string,
 
 async function getClassDeadSmells(code: string, class_name: string) {
     try {
-        const response = await axios.post<DeadClassResponse>(`${BASE_URL}/dead-class`, { code, class_name });
+        const response = await axios.post<DeadClassResponse>(`${BASE_URL}/detection/dead-class`, { code, class_name });
         return response.data;
     } catch (e) {
         console.error(`Failed to get dead smells for class ${class_name}:`, e);

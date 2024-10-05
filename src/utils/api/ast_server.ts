@@ -18,7 +18,7 @@ const handleRequestError = (filePath: string, content: string, error: any, fileD
 async function sendFileToServer(filePath: string, content: string, fileData: { [key: string]: CodeResponse }) {
     try {
         const fileName = path.basename(filePath);
-        const response = await axios.post<CodeResponse>(`${BASE_URL}/analyze-ast`, { code: content });
+        const response = await axios.post<CodeResponse>(`${BASE_URL}/detection/analyze-ast`, { code: content });
         const responseData = response.data;
         if (responseData.success) {
             console.log(`File ${fileName} sent successfully.`);
@@ -87,27 +87,27 @@ const detection_api = async (filePath: string, content: string,
 const detectMagicNumbers = async (filePath: string, content: string,
     fileData: { [key: string]: CodeResponse },
     detectionData: { [key: string]: DetectionResponse }) => {
-    await postToServer(filePath, content, fileData, '/magic-numbers', detectionData);
+    await postToServer(filePath, content, fileData, '/detection/magic-numbers', detectionData);
 };
 
 const detectDuplicateCode = async (filePath: string, content: string,
     fileData: { [key: string]: CodeResponse },
     detectionData: { [key: string]: DetectionResponse }) => {
-    await postToServer(filePath, content, fileData, '/duplicated-code', detectionData);
+    await postToServer(filePath, content, fileData, '/detection/duplicated-code', detectionData);
     addDiagnostic('Uh Oh! Duplicate Code detected', filePath);
 };
 
 const detectUnusedVariables = async (filePath: string, content: string,
     fileData: { [key: string]: CodeResponse },
     detectionData: { [key: string]: DetectionResponse }) => {
-    await postToServer(filePath, content, fileData, '/unused-variables', detectionData);
+    await postToServer(filePath, content, fileData, '/detection/unused-variables', detectionData);
     addDiagnostic('Uh Oh! Unused Variables detected', filePath);
 };
 
 const detectLongParameterList = async (filePath: string, content: string,
     fileData: { [key: string]: CodeResponse },
     detectionData: { [key: string]: DetectionResponse }) => {
-    let longParams = await postToServer(filePath, content, fileData, '/parameter-list', detectionData);
+    let longParams = await postToServer(filePath, content, fileData, '/detection/parameter-list', detectionData);
     console.log("long params:", longParams);
     Object.entries(longParams).map(([func, val]) => {
         if (val) {
@@ -119,7 +119,7 @@ const detectLongParameterList = async (filePath: string, content: string,
 const detectNamingConventions = async (filePath: string, content: string,
     fileData: { [key: string]: CodeResponse },
     detectionData: { [key: string]: DetectionResponse }) => {
-    await postToServer(filePath, content, fileData, '/naming-convention', detectionData);
+    await postToServer(filePath, content, fileData, '/detection/naming-convention', detectionData);
 
 };
 
