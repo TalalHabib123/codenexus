@@ -1,6 +1,6 @@
 import * as path from 'path';
 import axios from 'axios';
-import { DeadCodeResponse } from '../../types/api';
+import { DeadCodeResponse ,DeadClassResponse } from '../../types/api';
 import { BASE_URL } from './api';
 
 async function sendFileForDeadCodeAnalysis(filePath: string, 
@@ -12,7 +12,6 @@ async function sendFileForDeadCodeAnalysis(filePath: string,
         const fileName = path.basename(filePath);
         const response = await axios.post<DeadCodeResponse>(`${BASE_URL}/dead-code`, { code: content, function_names, global_variables });
         const responseData = response.data;
-        console.log(responseData);
         if (responseData.success) {
             console.log(`File ${fileName} sent successfully.`);
             fileData[filePath] = {
@@ -34,4 +33,17 @@ async function sendFileForDeadCodeAnalysis(filePath: string,
     }
 }
 
-export { sendFileForDeadCodeAnalysis };
+async function getClassDeadSmells(code: string, class_name: string) {
+    try {
+        const response = await axios.post<DeadClassResponse>(`${BASE_URL}/dead-class`, { code, class_name });
+        return response.data;
+    } catch (e) {
+        console.error(`Failed to get dead smells for class ${class_name}:`, e);
+        return {
+            success: false,
+            error: "Failed to communicate with server" + e,
+        };
+    }
+}
+
+export { sendFileForDeadCodeAnalysis, getClassDeadSmells };

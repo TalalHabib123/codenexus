@@ -52,11 +52,17 @@ interface Response{
 
 interface DeadCodeResponse {
     function_names?: string[];
-    class_details?: { [key: string]: string | string[] }[];
+    class_details?: { [key: string]: string | string[] | Boolean }[];
     global_variables?: string[];
     imports?: { [key: string]: { [key: string]: any }[] };
     success: boolean;
     error?: string;
 }
 
-export { CodeResponse, DeadCodeResponse, Response, DetectionResponse };
+interface DeadClassResponse {
+    class_details?: { [key: string]: string[] }[];
+    success: boolean;
+    error?: string;
+}
+
+export { CodeResponse, DeadCodeResponse, Response, DetectionResponse, DeadClassResponse };

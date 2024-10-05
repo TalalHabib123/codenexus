@@ -45,7 +45,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // );
 
     // await Promise.all(detectionTasksPromises);
-    await detectCodeSmells(dependencyGraph, fileData, folders);
+    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles);
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {

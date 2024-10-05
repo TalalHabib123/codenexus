@@ -1,6 +1,6 @@
 import { FileNode } from "../../types/graph";
-import { CodeResponse, DeadCodeResponse } from "../../types/api";
-import { sendFileForDeadCodeAnalysis } from "../../utils/api/dead_code_api";
+import { CodeResponse, DeadCodeResponse, DeadClassResponse } from "../../types/api";
+import { sendFileForDeadCodeAnalysis, getClassDeadSmells } from "../../utils/api/dead_code_api";
 
 function separate_files(workspaceFolder: string, fileData: { [key: string]: CodeResponse }) {
     const files: { [key: string]: CodeResponse } = {};
@@ -16,11 +16,11 @@ async function getDeadCodeSmells(
     dependencyGraph: { [key: string]: Map<string, FileNode> },
     fileData: { [key: string]: CodeResponse },
     DeadCodeData: { [key: string]: DeadCodeResponse },
-    workspaceFolders: string[]
+    workspaceFolders: string[],
+    newFiles: { [key: string]: string }
 ) {
     for (const [filePath, data] of Object.entries(fileData)) {
         if (data.error || !data.code || data.code === "") {
-            console.log(data);
             console.log('Error in file:', filePath);    
             DeadCodeData[filePath] = {
                 success: false,
@@ -36,8 +36,12 @@ async function getDeadCodeSmells(
         const files = separate_files(workspaceFolder, fileData);
         const dependencyGraphForFolder = dependencyGraph[workspaceFolder];
         for (const [filePath, data] of Object.entries(files)) {
+            if (!Object.keys(newFiles).some((key) => key === filePath)) {
+                continue;
+            }
             if (DeadCodeData[filePath] && DeadCodeData[filePath].success) {
                 const graph_data = dependencyGraphForFolder.get(filePath);
+                const dead_code_data = DeadCodeData[filePath];
                 if (graph_data) {
                     for (const dependency of graph_data.dependencies) {
                         if (dependency.valid)
@@ -55,13 +59,65 @@ async function getDeadCodeSmells(
                                         call_flag = true;
                                     }
                                     if (type === "function") {
-                                        
+                                        if (dead_code_data.function_names && dead_code_data.function_names.includes(exports_name)) {
+                                            const index = dead_code_data.function_names.indexOf(exports_name);
+                                            dead_code_data.function_names.splice(index, 1);
+                                            DeadCodeData[filePath] = dead_code_data;
+                                        }
                                     }
                                     else if (type === "variable") {
-
+                                        if (dead_code_data.global_variables && dead_code_data.global_variables.includes(exports_name)) {
+                                            const index = dead_code_data.global_variables.indexOf(exports_name);
+                                            dead_code_data.global_variables.splice(index, 1);
+                                            DeadCodeData[filePath] = dead_code_data;
+                                        }
                                     }
                                     else if (type === "class") {
+                                        if (dead_code_data.class_details && dead_code_data.class_details.length > 0) {
+                                            for (const class_detail of dead_code_data.class_details) {
+                                                if (class_detail.class_name === exports_name) {
+                                                    class_detail.used = true;
+                                                    if (fileData[exporting_file] && fileData[exporting_file].code) {
+                                                        const data : DeadClassResponse  = await getClassDeadSmells(fileData[exporting_file].code, exports_name);
+                                                        if (data.success && data.class_details) {
+                                                            const methods = data.class_details[0];
+                                                            const variables = data.class_details[1];
+                                                            if (Array.isArray(methods) && methods.length > 0) {
+                                                                if (Array.isArray(dead_code_data.class_details[1]) && dead_code_data.class_details[1].length > 0)
+                                                                {
+                                                                    for (const method of methods) {
+                                                                        const method_name = method.method_name;
+                                                                        const index = dead_code_data.class_details[1].indexOf(method_name);
+                                                                        if (index > -1) {
+                                                                            dead_code_data.class_details[1].splice(index, 1);
+                                                                        }
+                                                                    }
+                                                                    DeadCodeData[filePath] = dead_code_data;
+                                                                }
+                                                            }
 
+                                                            if (Array.isArray(variables) && variables.length > 0) {
+                                                                if (Array.isArray(dead_code_data.class_details[2]) && dead_code_data.class_details[2].length > 0)
+                                                                {
+                                                                    for (const variable of variables) {
+                                                                        const variable_name = variable.variable_name;
+                                                                        const index = dead_code_data.class_details[2].indexOf(variable_name);
+                                                                        if (index > -1) {
+                                                                            dead_code_data.class_details[2].splice(index, 1);
+                                                                        }
+                                                                    }
+                                                                    DeadCodeData[filePath] = dead_code_data;
+                                                                }
+                                                            }   
+
+                                                        }
+                                                    }
+                                                    const index = dead_code_data.class_details.indexOf(class_detail);
+                                                    dead_code_data.class_details[index] = class_detail;
+                                                    DeadCodeData[filePath] = dead_code_data;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

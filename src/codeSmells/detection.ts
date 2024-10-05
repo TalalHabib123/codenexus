@@ -4,8 +4,10 @@ import { getDeadCodeSmells } from "./analysis/dead_smells";
 
 export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<string, FileNode> }, 
     fileData: { [key: string]: CodeResponse },
-    workspaceFolders: string[]) {
+    workspaceFolders: string[],
+    newFiles: { [key: string]: string }
+) {
     const DeadCodeData: { [key: string]: DeadCodeResponse } = {};
-    await getDeadCodeSmells(dependencyGraph, fileData, DeadCodeData, workspaceFolders);
+    await getDeadCodeSmells(dependencyGraph, fileData, DeadCodeData, workspaceFolders, newFiles);
     console.log(DeadCodeData);
 }
