@@ -1,5 +1,5 @@
 import { FileNode } from "../../types/graph";
-import { CodeResponse, DeadCodeResponse, DeadClassResponse } from "../../types/api";
+import { CodeResponse, DeadCodeResponse, DeadClassResponse, DetectionResponse } from "../../types/api";
 import { sendFileForDeadCodeAnalysis, getClassDeadSmells } from "../../utils/api/dead_code_api";
 
 function separate_files(workspaceFolder: string, fileData: { [key: string]: CodeResponse }) {
@@ -17,7 +17,8 @@ async function getDeadCodeSmells(
     fileData: { [key: string]: CodeResponse },
     DeadCodeData: { [key: string]: DeadCodeResponse },
     workspaceFolders: string[],
-    newFiles: { [key: string]: string }
+    newFiles: { [key: string]: string },
+    FileDetectionData: { [key: string]: DetectionResponse }
 ) {
     for (const [filePath, data] of Object.entries(fileData)) {
         if (data.error || !data.code || data.code === "") {
@@ -127,7 +128,10 @@ async function getDeadCodeSmells(
             }
         }
     }
-    return DeadCodeData;
+    for (const [filePath, data] of Object.entries(DeadCodeData)) {
+        FileDetectionData[filePath].dead_code = data;
+    }
+    return FileDetectionData;
 }
 
 export { getDeadCodeSmells };

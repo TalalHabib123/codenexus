@@ -26,10 +26,51 @@ interface CodeResponse {
     error?: string;
 }
 
+interface VariableConflictAnalysis {
+    variable: string;
+    assignments: Array<[string, number]>;
+    local_assignments: Array<[string, number]>;
+    usages: Array<[string, number]>;
+    conflicts: string[];
+    warnings: string[];
+}
+
+interface VariableConflictResponse {
+    conflicts_report?: VariableConflictAnalysis[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
+interface TemporaryVariableResponse {
+    temporary_fields?: string[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
+interface UnreachableResponse {
+    unreachable_code?: string[];
+    success: boolean;
+    error?: string | undefined;
+}
+
+interface ConditionDetails {
+    line_range: [number, number];
+    condition_code: string;
+    complexity_score: number;
+    code_block: string;
+}
+
+interface ComplexConditionalResponse {
+    conditionals?: ConditionDetails[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
+
 interface SubDetectionResponse {
     success: boolean;
     error?: string;
-    data?: string[]; 
+    data?: string[] | ComplexConditionalResponse | VariableConflictResponse | TemporaryVariableResponse | UnreachableResponse | DeadCodeResponse; 
 }
 
 interface DetectionResponse {
@@ -38,6 +79,11 @@ interface DetectionResponse {
     unused_variables?: SubDetectionResponse;
     long_parameter_list?: SubDetectionResponse;
     naming_convention?: SubDetectionResponse;
+    dead_code?: SubDetectionResponse;
+    unreachable_code?: SubDetectionResponse;
+    temporary_field?: SubDetectionResponse;
+    overly_complex_condition?: SubDetectionResponse;
+    global_conflict?: SubDetectionResponse;
     success: boolean;
     error?: string;  
 }
@@ -65,4 +111,13 @@ interface DeadClassResponse {
     error?: string;
 }
 
-export { CodeResponse, DeadCodeResponse, Response, DetectionResponse, DeadClassResponse };
+export { CodeResponse, 
+    DeadCodeResponse, 
+    Response, 
+    DetectionResponse, 
+    DeadClassResponse,  
+    UnreachableResponse,
+    VariableConflictResponse,
+    TemporaryVariableResponse,
+    ComplexConditionalResponse
+};
