@@ -12,15 +12,15 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
     newFiles: { [key: string]: string },
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
-    // await getDeadCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData);
+    await getDeadCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData);
 
     await getUnreachableCodeSmells(fileData, newFiles, FileDetectionData);
 
-    // await getTemporaryFieldSmells(fileData, newFiles, FileDetectionData);
+    await getTemporaryFieldSmells(fileData, newFiles, FileDetectionData);
 
-    // await getComplexConditionalSmells(fileData, newFiles, FileDetectionData);
+    await getComplexConditionalSmells(fileData, newFiles, FileDetectionData);
 
-    // await getGlobalConflictSmells(fileData, newFiles, workspaceFolders, FileDetectionData);
+    await getGlobalConflictSmells(fileData, newFiles, workspaceFolders, FileDetectionData);
 
     console.log(FileDetectionData);
 }

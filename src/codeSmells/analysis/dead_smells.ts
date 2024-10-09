@@ -20,6 +20,11 @@ async function getDeadCodeSmells(
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
     const DeadCodeData: { [key: string]: DeadCodeResponse } = {};
+    for (const [filePath, data] of Object.entries(FileDetectionData)) {
+        if (data.dead_code && data.dead_code.success) {
+            DeadCodeData[filePath] = data.dead_code;
+        }
+    }
     for (const [filePath, data] of Object.entries(fileData)) {
         if (data.error || !data.code || data.code === "") {
             console.log('Error in file:', filePath);    
@@ -31,15 +36,15 @@ async function getDeadCodeSmells(
         }
         const function_names = data.function_names || [];
         const global_variables = data.global_variables?.map(variable => variable.variable_name) || [];
+        if (!Object.keys(newFiles).some((key) => key === filePath)) {
+            continue;
+        }
         await sendFileForDeadCodeAnalysis(filePath, data.code, function_names, global_variables, DeadCodeData);
     }
     for (const workspaceFolder of workspaceFolders) {
         const files = separate_files(workspaceFolder, fileData);
         const dependencyGraphForFolder = dependencyGraph[workspaceFolder];
         for (const [filePath, data] of Object.entries(files)) {
-            if (!Object.keys(newFiles).some((key) => key === filePath)) {
-                continue;
-            }
             if (DeadCodeData[filePath] && DeadCodeData[filePath].success) {
                 const graph_data = dependencyGraphForFolder.get(filePath);
                 const dead_code_data = DeadCodeData[filePath];
@@ -129,17 +134,14 @@ async function getDeadCodeSmells(
         }
     }
     for (const [filePath, data] of Object.entries(DeadCodeData)) {
-        // Ensure that FileDetectionData[filePath] exists and has a dead_code array.
         if (!FileDetectionData[filePath]) {
             FileDetectionData[filePath] = { success: false, dead_code: { success: false, data: [] } };
         }
     
-        // If dead_code is not initialized as an array, initialize it.
         if (!Array.isArray(FileDetectionData[filePath].dead_code)) {
             FileDetectionData[filePath].dead_code = { success: false, data: [] };
         }
     
-        // Map the data to dead_code.
         FileDetectionData[filePath].dead_code = data;
         if (data)
         {

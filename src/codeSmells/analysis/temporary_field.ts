@@ -25,17 +25,14 @@ async function getTemporaryFieldSmells(
     }
 
     for (const [filePath, data] of Object.entries(TemporaryFieldData)) {
-        // Ensure that FileDetectionData[filePath] exists and has a dead_code array.
         if (!FileDetectionData[filePath]) {
             FileDetectionData[filePath] = { success: false, temporary_field: { success: false, data: [] } };
         }
     
-        // If dead_code is not initialized as an array, initialize it.
         if (!Array.isArray(FileDetectionData[filePath].temporary_field)) {
             FileDetectionData[filePath].temporary_field = { success: false, data: [] };
         }
     
-        // Map the data to dead_code.
         FileDetectionData[filePath].temporary_field = data;
         if (data)
         {
