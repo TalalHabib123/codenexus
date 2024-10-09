@@ -22,9 +22,25 @@ async function getComplexConditionalSmells(
         await sendFileForComplexConditionalAnalysis(filePath, data.code, ComplexConditionalData);
     }
 
-    for(const [filePath, data] of Object.entries(ComplexConditionalData)) {
+    for (const [filePath, data] of Object.entries(ComplexConditionalData)) {
+        // Ensure that FileDetectionData[filePath] exists and has a dead_code array.
+        if (!FileDetectionData[filePath]) {
+            FileDetectionData[filePath] = { success: false, overly_complex_condition: { success: false, data: [] } };
+        }
+    
+        // If dead_code is not initialized as an array, initialize it.
+        if (!Array.isArray(FileDetectionData[filePath].overly_complex_condition)) {
+            FileDetectionData[filePath].overly_complex_condition = { success: false, data: [] };
+        }
+    
+        // Map the data to dead_code.
         FileDetectionData[filePath].overly_complex_condition = data;
+        if (data)
+        {
+            FileDetectionData[filePath].success = true;
+        }
     }
+
     return FileDetectionData;
 }
 

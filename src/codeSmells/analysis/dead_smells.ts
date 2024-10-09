@@ -15,11 +15,11 @@ function separate_files(workspaceFolder: string, fileData: { [key: string]: Code
 async function getDeadCodeSmells(
     dependencyGraph: { [key: string]: Map<string, FileNode> },
     fileData: { [key: string]: CodeResponse },
-    DeadCodeData: { [key: string]: DeadCodeResponse },
     workspaceFolders: string[],
     newFiles: { [key: string]: string },
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
+    const DeadCodeData: { [key: string]: DeadCodeResponse } = {};
     for (const [filePath, data] of Object.entries(fileData)) {
         if (data.error || !data.code || data.code === "") {
             console.log('Error in file:', filePath);    
@@ -129,7 +129,22 @@ async function getDeadCodeSmells(
         }
     }
     for (const [filePath, data] of Object.entries(DeadCodeData)) {
+        // Ensure that FileDetectionData[filePath] exists and has a dead_code array.
+        if (!FileDetectionData[filePath]) {
+            FileDetectionData[filePath] = { success: false, dead_code: { success: false, data: [] } };
+        }
+    
+        // If dead_code is not initialized as an array, initialize it.
+        if (!Array.isArray(FileDetectionData[filePath].dead_code)) {
+            FileDetectionData[filePath].dead_code = { success: false, data: [] };
+        }
+    
+        // Map the data to dead_code.
         FileDetectionData[filePath].dead_code = data;
+        if (data)
+        {
+            FileDetectionData[filePath].success = true;
+        }
     }
     return FileDetectionData;
 }
