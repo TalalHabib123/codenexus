@@ -5,6 +5,7 @@ import { sendFileToServer, detection_api } from './utils/api/ast_server';
 import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
 import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
 import { detectCodeSmells } from './codeSmells/detection';
+import { fileWatcherEventHandler } from './utils/workspace-update/update';
 import WebSocket from 'ws';
 
 let ws: WebSocket | null = null;
@@ -39,13 +40,13 @@ export async function activate(context: vscode.ExtensionContext) {
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
     // console.log(dependencyGraph);
 
-    // const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
-    //     detection_api(filePath, content, fileData, FileDetectionData)
-    // );
+    const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
+        detection_api(filePath, content, fileData, FileDetectionData)
+    );
 
-    // await Promise.all(detectionTasksPromises);
-    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
-    // console.log(FileDetectionData);
+    await Promise.all(detectionTasksPromises);
+    // await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders);
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
@@ -70,24 +71,6 @@ export function deactivate() {
     }
 }
 
-
-// Event handler functions
-const fileWatcherEventHandler = (context: vscode.ExtensionContext) => {
-    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*', false, false, false);
-
-    fileWatcher.onDidCreate(uri => {
-        console.log(`File created: ${uri.fsPath}`);
-    });
-
-    fileWatcher.onDidDelete(uri => {
-        console.log(`File deleted: ${uri.fsPath}`);
-    });
-
-    fileWatcher.onDidChange(uri => {
-        console.log(`File changed: ${uri.fsPath}`);
-    });
-    context.subscriptions.push(fileWatcher);
-};
 
 function establishWebSocketConnection() {
     // Establish WebSocket connection to the API Gateway

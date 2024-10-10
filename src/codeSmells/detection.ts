@@ -12,6 +12,7 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
     newFiles: { [key: string]: string },
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
+    console.log(newFiles);
     await getDeadCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData);
 
     await getUnreachableCodeSmells(fileData, newFiles, FileDetectionData);
