@@ -6,7 +6,7 @@ import { getTemporaryFieldSmells } from "./analysis/temporary_field";
 import { getComplexConditionalSmells } from "./analysis/overly_complex";
 import { getGlobalConflictSmells } from "./analysis/global_conflict";
 import { getMagicNumberSmells } from "./analysis/magic_numbers";
-
+import { getParameterListSmells } from "./analysis/long_parameter_list";
 
 export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<string, FileNode> }, 
     fileData: { [key: string]: CodeResponse },
@@ -25,6 +25,8 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
     await getGlobalConflictSmells(fileData, newFiles, workspaceFolders, FileDetectionData);
 
     await getMagicNumberSmells(fileData, newFiles, FileDetectionData);
-    
+
+    await getParameterListSmells(fileData, newFiles, FileDetectionData);
+
     console.log(FileDetectionData);
 }

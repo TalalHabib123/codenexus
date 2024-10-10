@@ -78,6 +78,20 @@ interface MagicNumbersResponse {
     error?: string | undefined;
 }
 
+interface ParameterListDetails {
+    function_name: string;
+    parameters: string[];
+    long_parameter_count: number;
+    long_parameter: boolean;
+    line_number: number;
+}
+
+interface LongParameterListResponse {
+    long_parameter_list?: ParameterListDetails[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
 interface SubDetectionResponse {
     success: boolean;
     error?: string;
@@ -137,5 +151,6 @@ export { CodeResponse,
     VariableConflictResponse,
     TemporaryVariableResponse,
     ComplexConditionalResponse,
-    MagicNumbersResponse
+    MagicNumbersResponse, 
+    LongParameterListResponse
 };
