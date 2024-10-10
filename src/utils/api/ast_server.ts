@@ -108,7 +108,7 @@ async function sendFileToServer(filePath: string, content: string, fileData: { [
 //             addDiagnostic(`Uh Oh! Function ${func} has a long parameter list`, filePath);
 //         }
 //     });
-// };
+// };  DONE
 
 // const detectNamingConventions = async (filePath: string, content: string,
 //     fileData: { [key: string]: CodeResponse },

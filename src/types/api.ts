@@ -92,6 +92,18 @@ interface LongParameterListResponse {
     error?: string | undefined;
 }
 
+interface UnusedVariablesDetails {
+    variable_name: string;
+    line_number: number;
+}
+
+interface UnusedVariablesResponse {
+    unused_variables?: UnusedVariablesDetails[] | null;
+    success: boolean;
+    error?: string | null;
+}
+
+
 interface SubDetectionResponse {
     success: boolean;
     error?: string;
@@ -101,7 +113,9 @@ interface SubDetectionResponse {
             TemporaryVariableResponse | 
             UnreachableResponse | 
             DeadCodeResponse | 
-            MagicNumbersResponse; 
+            MagicNumbersResponse | 
+            LongParameterListResponse |
+            UnusedVariablesResponse; 
 }
 
 interface DetectionResponse {
@@ -152,5 +166,6 @@ export { CodeResponse,
     TemporaryVariableResponse,
     ComplexConditionalResponse,
     MagicNumbersResponse, 
-    LongParameterListResponse
+    LongParameterListResponse,
+    UnusedVariablesResponse,
 };
