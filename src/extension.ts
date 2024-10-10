@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { CodeResponse, DetectionResponse } from './types/api';
 import { FolderStructure } from './types/folder';
-import { sendFileToServer, detection_api } from './utils/api/ast_server';
+import { sendFileToServer } from './utils/api/ast_server';
 import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
 import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
 import { detectCodeSmells } from './codeSmells/detection';
@@ -38,14 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    // console.log(dependencyGraph);
-
-    const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
-        detection_api(filePath, content, fileData, FileDetectionData)
-    );
-
-    await Promise.all(detectionTasksPromises);
-    // await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
     fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders);
 }
 

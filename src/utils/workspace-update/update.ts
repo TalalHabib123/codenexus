@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import * as fs from 'fs';
-import { detection_api } from '../api/ast_server';
 import { FileNode } from '../../types/graph';
 import { detectCodeSmells } from '../../codeSmells/detection';
 import { CodeResponse, DetectionResponse } from '../../types/api';
@@ -69,7 +68,7 @@ async function checkCompilable(
       const newFile = { [filePath]: content };
 
       // Call the detection API
-      await detection_api(filePath, content, fileData, detectionData);
+      // await detection_api(filePath, content, fileData, detectionData);
 
       // Detect code smells after successful compilation
       // await detectCodeSmells(dependencyGraph, fileData, folders, newFile, detectionData);

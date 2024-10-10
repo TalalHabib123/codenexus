@@ -5,6 +5,8 @@ import { getUnreachableCodeSmells } from "./analysis/unreachable_smell";
 import { getTemporaryFieldSmells } from "./analysis/temporary_field";
 import { getComplexConditionalSmells } from "./analysis/overly_complex";
 import { getGlobalConflictSmells } from "./analysis/global_conflict";
+import { getMagicNumberSmells } from "./analysis/magic_numbers";
+
 
 export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<string, FileNode> }, 
     fileData: { [key: string]: CodeResponse },
@@ -12,7 +14,6 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
     newFiles: { [key: string]: string },
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
-    console.log(newFiles);
     await getDeadCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData);
 
     await getUnreachableCodeSmells(fileData, newFiles, FileDetectionData);
@@ -23,5 +24,7 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
 
     await getGlobalConflictSmells(fileData, newFiles, workspaceFolders, FileDetectionData);
 
+    await getMagicNumberSmells(fileData, newFiles, FileDetectionData);
+    
     console.log(FileDetectionData);
 }

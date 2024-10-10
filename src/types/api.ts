@@ -67,10 +67,27 @@ interface ComplexConditionalResponse {
 }
 
 
+interface MagicNumbersDetails {
+    magic_number: number;
+    line_number: number;
+}
+
+interface MagicNumbersResponse {
+    magic_numbers?: MagicNumbersDetails[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
 interface SubDetectionResponse {
     success: boolean;
     error?: string;
-    data?: string[] | ComplexConditionalResponse | VariableConflictResponse | TemporaryVariableResponse | UnreachableResponse | DeadCodeResponse; 
+    data?: string[] | 
+            ComplexConditionalResponse | 
+            VariableConflictResponse |
+            TemporaryVariableResponse | 
+            UnreachableResponse | 
+            DeadCodeResponse | 
+            MagicNumbersResponse; 
 }
 
 interface DetectionResponse {
@@ -119,5 +136,6 @@ export { CodeResponse,
     UnreachableResponse,
     VariableConflictResponse,
     TemporaryVariableResponse,
-    ComplexConditionalResponse
+    ComplexConditionalResponse,
+    MagicNumbersResponse
 };
