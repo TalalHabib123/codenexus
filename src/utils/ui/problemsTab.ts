@@ -1,39 +1,99 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { CodeResponse, DetectionResponse } from '../../types/api';
+
 export function showProblemsTab() {
     vscode.commands.executeCommand('workbench.action.problems.focus');
 }
 
-// Create a diagnostic collection
-const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
 
-// Function to add a diagnostic entry
-export function addDiagnostic(problem: string, filePath: string) {
-    console.log("Problem:", problem);
-    console.log("File Path:", filePath);
+export function showCodeSmellsInProblemsTab(
+  FileDetectionData: { [key: string]: DetectionResponse },
+  diagnosticCollection: vscode.DiagnosticCollection
+) {
+  diagnosticCollection.clear();
 
-    vscode.workspace.openTextDocument(filePath).then(document => {
-        console.log("Document:", document);
+  for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
+      const diagnostics: vscode.Diagnostic[] = [];
 
-        const diagnostics: vscode.Diagnostic[] = [];
-        const range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)); // Empty range
-        console.log("Range:", range);
-
-        const diagnostic = new vscode.Diagnostic(range, problem, vscode.DiagnosticSeverity.Warning);
-        console.log("Diagnostic:", diagnostic);
-
-        // Use a tag to mark it as unnecessary, fading it out in the editor (optional)
-        diagnostic.tags = [vscode.DiagnosticTag.Unnecessary];
-        console.log("Diagnostic with tags:", diagnostic);
-
-        // Add the diagnostic entry to the collection
-        diagnostics.push(diagnostic);
-        console.log("Diagnostics array:", diagnostics);
-
-        diagnosticCollection.set(document.uri, diagnostics);
-        console.log("Diagnostic Collection set for URI:", document.uri);
-    });
+      if (detectionData.long_parameter_list?.success && detectionData.long_parameter_list.data && 'long_parameter_list' in detectionData.long_parameter_list.data) {
+          const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
+          if (longparameter) {
+              longparameter.forEach(longparameterobj => {
+          if(longparameterobj.long_parameter=true){
+              const range = new vscode.Range(
+                  new vscode.Position(longparameterobj.line_number - 1, 0), 
+                  new vscode.Position(longparameterobj.line_number - 1, 100) 
+              );
+              const message = `Long parameter list detected: ${longparameterobj.function_name} with ${longparameterobj.long_parameter_count} parameters`;
+              diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+              console.log("longparameter:", longparameter);
+          }
+      }
+      );
+      }
+  }
+  if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
+      const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+      if (magicNumber) {
+          magicNumber.forEach(magicNumberobj => {
+          const range = new vscode.Range(
+              new vscode.Position(magicNumberobj.line_number - 1, 0), 
+              new vscode.Position(magicNumberobj.line_number - 1, 100) 
+          );
+          const message = `Magic number detected: ${magicNumberobj.magic_number}`;
+              diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+      }
+      );
+      }
+  }
+  //NMAing convention do it
+  // if (detectionData.naming_convention?.success && detectionData.naming_convention.data && 'naming_convention' in detectionData.naming_convention.data) {
+  //     const namingConven =  detectionData.naming_convention.data.naming_convention;
+  //     if (namingConven) {
+  //         namingConven.forEach(namingConvenobj => {
+  //         const range = new vscode.Range(
+  //             new vscode.Position(namingConvenobj.line_number - 1, 0), 
+  //             new vscode.Position(namingConvenobj.line_number - 1, 100) 
+  //         );
+  //         const message = `Magic number detected: ${namingConvenobj.magic_number}`;
+  //             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+  //     }
+  //     );
+  //     }
+  // }
+  console.log("add");
+  if (detectionData. duplicated_code?.success && detectionData. duplicated_code.data && 'duplicate_code' in detectionData. duplicated_code.data) {
+    const duplicatedCode =  detectionData. duplicated_code.data.duplicate_code;
+  console.log("duplicatedcode",duplicatedCode);
+    if (duplicatedCode) {
+        duplicatedCode.forEach (duplicatedCodeobj => {
+          duplicatedCodeobj.duplicates.forEach(obj=>{
+            const range = new vscode.Range(
+              new vscode.Position(obj.start_line - 1, 0), 
+              new vscode.Position(obj.start_line - 1, 100) 
+          );
+          const range2=new vscode.Range(
+            new vscode.Position(obj.end_line - 1, 0), 
+            new vscode.Position(obj.end_line - 1, 100) 
+        );
+          const message = `Duplicated code on line: ${obj.start_line} till line: ${obj.end_line}`;
+             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+          });
+       
+    }
+    );
+    }
 }
+
+
+
+      const uri = vscode.Uri.file(filePath);
+      diagnosticCollection.set(uri, diagnostics);
+  
+}
+}
+
 
 // Create a FolderStructureProvider function
 export function createFolderStructureProvider(workspaceRoot: string | undefined): vscode.TreeDataProvider<vscode.TreeItem> {
