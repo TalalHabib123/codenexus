@@ -48,21 +48,24 @@ export function showCodeSmellsInProblemsTab(
       );
       }
   }
-  //NMAing convention do it
-  // if (detectionData.naming_convention?.success && detectionData.naming_convention.data && 'naming_convention' in detectionData.naming_convention.data) {
-  //     const namingConven =  detectionData.naming_convention.data.naming_convention;
-  //     if (namingConven) {
-  //         namingConven.forEach(namingConvenobj => {
-  //         const range = new vscode.Range(
-  //             new vscode.Position(namingConvenobj.line_number - 1, 0), 
-  //             new vscode.Position(namingConvenobj.line_number - 1, 100) 
-  //         );
-  //         const message = `Magic number detected: ${namingConvenobj.magic_number}`;
-  //             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-  //     }
-  //     );
-  //     }
-  // }
+  //Naming convention
+  if (detectionData.naming_convention?.success && detectionData.naming_convention.data && 'inconsistent_naming' in detectionData.naming_convention.data) {
+      const namingConven =  detectionData.naming_convention.data.inconsistent_naming;
+      if (namingConven) {
+          namingConven.forEach(namingConvenobj => {
+           
+              const range = new vscode.Range(
+                new vscode.Position(0, 0), 
+                new vscode.Position(0, 100) 
+            );
+            const message = `Inconsistent Naming Convention ${namingConvenobj.type} detected with ${namingConvenobj.total_count} instances.`;
+                diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+           
+          
+      }
+      );
+      }
+  }
 
   //Duplicated code
   if (detectionData. duplicated_code?.success && detectionData. duplicated_code.data && 'duplicate_code' in detectionData. duplicated_code.data) {
@@ -122,23 +125,26 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
       }
       );
       }
-  }
-  //unreachable code   unreachable_code
-  if (detectionData.unreachable_code?.success && detectionData.unreachable_code.data && 'unreachable_code' in detectionData.unreachable_code.data) {
-    const unusedVar =  detectionData.unreachable_code.data.unreachable_code;
-    if (unusedVar) {
-        unusedVar.forEach(unusedVarobj => {
-          const range = new vscode.Range(
-            new vscode.Position(2- 1, 0), 
-            new vscode.Position(3 - 1, 100) 
+  } 
+  //unreachable code    not completed
+  if (detectionData.unreachable_code?.success && detectionData.unreachable_code && 'unreachable_code' in detectionData.unreachable_code) {
+    const  unreachable =  detectionData.unreachable_code.unreachable_code;
+    if ( unreachable) {
+      unreachable.forEach((unreachableCode, index) => {
+        const range = new vscode.Range(
+            new vscode.Position(0, 0), 
+            new vscode.Position(0, 100)
         );
-    
-        const message = `Dead Code detected: ${unusedVarobj}`;
-            diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-    }
-    );
+
+        const message = `Unreachable code detected: ${unreachableCode}`;
+        diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+    });
+   
     }
 }
+
+//overly complex code
+
 
 
       const uri = vscode.Uri.file(filePath);
