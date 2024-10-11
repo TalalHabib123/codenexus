@@ -140,6 +140,7 @@ function showCodeSmellsInProblemsTab(
         }
         );
         }
+    }
 
         // if (detectionData.unused_variables?.success && detectionData.unused_variables.data) {
         //     const unusedVars = (detectionData.unused_variables.data as UnusedVariablesResponse).unused_variables;
@@ -163,6 +164,6 @@ function showCodeSmellsInProblemsTab(
 
         const uri = vscode.Uri.file(filePath);
         diagnosticCollection.set(uri, diagnostics);
-    }
+    
 }
 }
