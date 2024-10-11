@@ -128,7 +128,7 @@ function showCodeSmellsInProblemsTab(
             const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
             if (longparameter) {
                 longparameter.forEach(longparameterobj => {
-            if(longparameterobj.long_parameter==true){
+            if(longparameterobj.long_parameter===true){
                 const range = new vscode.Range(
                     new vscode.Position(longparameterobj.line_number - 1, 0), 
                     new vscode.Position(longparameterobj.line_number - 1, 100) 
