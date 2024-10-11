@@ -14,12 +14,6 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "codenexus.helloWorld",
-        "title": "Hello World"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -32,15 +26,25 @@
     "views": {
       "package-explorer": [
         {
-          "id": "package-dependencies",
-          "name": "Dependencies"
+          "id": "myFolderStructureView",
+          "name": "Folder Structure"
         },
         {
           "id": "package-outline",
-          "name": "Outline"
+          "name": "Code Smells detected"
         }
       ]
-    }
+    },
+    "commands": [
+      {
+        "command": "codenexus.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "package-explorer.refreshFolderStructure",
+        "title": "Refresh Folder Structure"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

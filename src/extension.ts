@@ -7,7 +7,7 @@ import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency
 import { detectCodeSmells } from './codeSmells/detection';
 import { fileWatcherEventHandler } from './utils/workspace-update/update';
 import WebSocket from 'ws';
-
+import {createFolderStructureProvider }from './utils/ui/problemsTab';
 let ws: WebSocket | null = null;
 
 
@@ -16,6 +16,7 @@ const FileDetectionData: { [key: string]: DetectionResponse } = {};
 const folderStructureData: { [key: string]: FolderStructure } = {};
 
 export async function activate(context: vscode.ExtensionContext) {
+
     const workspaceFolders = vscode.workspace.workspaceFolders;
 
     const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
@@ -31,6 +32,18 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     context.workspaceState.update('processedFiles', allFiles);
+    const workspaceRoot = vscode.workspace.rootPath;
+    const folderStructureProvider = createFolderStructureProvider(workspaceRoot);
+    vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
+  
+    // // Optionally, add a command to refresh the folder structure view
+    // context.subscriptions.push(
+    //   vscode.commands.registerCommand('myExtension.refreshFolderStructure', () => {
+    //     vscode.window.createTreeView('myFolderStructureView', {
+    //       treeDataProvider: createFolderStructureProvider(workspaceRoot)
+    //     });
+    //   })
+    // );
 
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
         sendFileToServer(filePath, content, fileData)
@@ -110,3 +123,4 @@ function testWebSocketConnection() {
         data: taskData
     }));
 }
+
