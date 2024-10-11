@@ -218,7 +218,8 @@ function buildDependencyGraph(
                         }
                         if (importFileData.class_details) {
                             for (const classDetail of importFileData.class_details) {
-                                if (Object.keys(classDetail)[0] === name) {
+                                console.log(Object.keys(classDetail)[0]);
+                                if (classDetail[Object.keys(classDetail)[0]] === name) {
                                     type = 'class';
                                     break;
                                 }
