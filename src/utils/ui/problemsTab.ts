@@ -62,10 +62,11 @@ export function showCodeSmellsInProblemsTab(
   //     );
   //     }
   // }
-  console.log("add");
+
+  //Duplicated code
   if (detectionData. duplicated_code?.success && detectionData. duplicated_code.data && 'duplicate_code' in detectionData. duplicated_code.data) {
     const duplicatedCode =  detectionData. duplicated_code.data.duplicate_code;
-  console.log("duplicatedcode",duplicatedCode);
+ 
     if (duplicatedCode) {
         duplicatedCode.forEach (duplicatedCodeobj => {
           duplicatedCodeobj.duplicates.forEach(obj=>{
@@ -73,13 +74,34 @@ export function showCodeSmellsInProblemsTab(
               new vscode.Position(obj.start_line - 1, 0), 
               new vscode.Position(obj.start_line - 1, 100) 
           );
-          const range2=new vscode.Range(
-            new vscode.Position(obj.end_line - 1, 0), 
-            new vscode.Position(obj.end_line - 1, 100) 
-        );
-          const message = `Duplicated code on line: ${obj.start_line} till line: ${obj.end_line}`;
+          const message = `Duplicated code on line ${obj.start_line} till line ${obj.end_line}`;
              diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
           });
+       
+    }
+    );
+    }
+  }
+  //Global conflict
+  if (detectionData.global_conflict?.success && detectionData.global_conflict.data && 'conflicts_report' in detectionData. global_conflict.data) {
+    const globalVariable =  detectionData. global_conflict.data.conflicts_report;
+  console.log("global",globalVariable);
+    if (globalVariable) {
+        globalVariable.forEach (globalVariableobj => {
+          const range = new vscode.Range(
+            new vscode.Position(globalVariableobj.assignments[0][1] - 1, 0),
+            new vscode.Position(globalVariableobj.assignments[0][1] - 1, 100)
+        );
+
+        // Create a message for the diagnostic
+        const message = `Variable conflict detected for variable '${globalVariableobj.variable}':
+Assignments: ${globalVariableobj.assignments.map(a => `(${a[0]}, line ${a[1]})`).join(', ')}
+Local Assignments: ${globalVariableobj.local_assignments.map(la => `(${la[0]}, line ${la[1]})`).join(', ')}
+Usages: ${globalVariableobj.usages.map(u => `(${u[0]}, line ${u[1]})`).join(', ')}
+Conflicts: ${globalVariableobj.conflicts.join(', ')}
+Warnings: ${globalVariableobj.warnings.join(', ')}`;
+             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+         
        
     }
     );
