@@ -126,7 +126,7 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
       );
       }
   } 
-  //unreachable code    not completed
+  //unreachable code    
   if (detectionData.unreachable_code?.success && detectionData.unreachable_code && 'unreachable_code' in detectionData.unreachable_code) {
     const  unreachable =  detectionData.unreachable_code.unreachable_code;
     if ( unreachable) {
