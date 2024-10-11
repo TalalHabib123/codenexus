@@ -44,7 +44,15 @@
         "command": "package-explorer.refreshFolderStructure",
         "title": "Refresh Folder Structure"
       }
-    ]
+    ],
+    "configuration": {
+        "properties": {
+            "codenexus.showInlineDiagnostics": {
+                "type": "boolean",
+                "default": false
+            }
+        }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

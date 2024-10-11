@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { CodeResponse, DetectionResponse } from '../../types/api';
+import { VariableConflictAnalysis } from '../../types/api';
 
 export function showProblemsTab() {
     vscode.commands.executeCommand('workbench.action.problems.focus');
@@ -84,28 +85,20 @@ export function showCodeSmellsInProblemsTab(
     }
   }
   //Global conflict
-  if (detectionData.global_conflict?.success && detectionData.global_conflict.data && 'conflicts_report' in detectionData. global_conflict.data) {
-    const globalVariable =  detectionData.global_conflict.data.conflicts_report;
-  console.log("global",globalVariable);
-    if (globalVariable) {
-        globalVariable.forEach (globalVariableobj => {
+  if (detectionData.global_conflict?.success && detectionData.global_conflict && 'conflicts_report' in detectionData. global_conflict) {
+    const globalVariable = detectionData.global_conflict.conflicts_report;
+    if (Array.isArray(globalVariable)) {
+        globalVariable.forEach((globalVariableobj: VariableConflictAnalysis) => {
+          
           const range = new vscode.Range(
-            new vscode.Position(globalVariableobj.assignments[0][1] - 1, 0),
-            new vscode.Position(globalVariableobj.assignments[0][1] - 1, 100)
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
         );
-
-        // Create a message for the diagnostic
-        const message = `Variable conflict detected for variable '${globalVariableobj.variable}':
-Assignments: ${globalVariableobj.assignments.map(a => `(${a[0]}, line ${a[1]})`).join(', ')}
-Local Assignments: ${globalVariableobj.local_assignments.map(la => `(${la[0]}, line ${la[1]})`).join(', ')}
-Usages: ${globalVariableobj.usages.map(u => `(${u[0]}, line ${u[1]})`).join(', ')}
-Conflicts: ${globalVariableobj.conflicts.join(', ')}
-Warnings: ${globalVariableobj.warnings.join(', ')}`;
-             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-         
-       
-    }
-    );
+ // Create a message for the diagnostic
+          globalVariableobj.conflicts.forEach(conflict => 
+            diagnostics.push(new vscode.Diagnostic(range, conflict, vscode.DiagnosticSeverity.Warning))
+          );
+        });
     }
 }
 //unused variable
@@ -139,6 +132,43 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
     );
     }
 }
+
+  if (detectionData.dead_code?.success && 'class_details' in detectionData.dead_code && 'function_names' in detectionData.dead_code && 'global_variables' in detectionData.dead_code) {
+    const classDetails = detectionData.dead_code.class_details;
+    const funcNames = detectionData.dead_code.function_names;
+    const globalVariables = detectionData.dead_code.global_variables;
+    
+    if (Array.isArray(classDetails)) {
+        classDetails.forEach((classDetail) => {
+            const range = new vscode.Range(
+                new vscode.Position(0, 0),
+                new vscode.Position(0, 0)
+            );
+
+                diagnostics.push(new vscode.Diagnostic(range, `${classDetail} was defined but never used`, vscode.DiagnosticSeverity.Warning));
+        });
+    }
+    if (Array.isArray(funcNames)) {
+        funcNames.forEach((funcName) => {
+            const range = new vscode.Range(
+                new vscode.Position(0, 0),
+                new vscode.Position(0, 0)
+            );
+            diagnostics.push(new vscode.Diagnostic(range, `${funcName} was defined but never used`, vscode.DiagnosticSeverity.Warning));
+        });
+    }
+    if (Array.isArray(globalVariables)) {
+        globalVariables.forEach((globalVariable) => {
+            const range = new vscode.Range(
+                new vscode.Position(0, 0),
+                new vscode.Position(0, 0)
+            );
+            diagnostics.push(new vscode.Diagnostic(range, `${globalVariable} was defined but never used`, vscode.DiagnosticSeverity.Warning));
+        });
+    }
+
+    
+  }
 
 
       const uri = vscode.Uri.file(filePath);
