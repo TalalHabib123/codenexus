@@ -128,19 +128,19 @@ function showCodeSmellsInProblemsTab(
             const longparameter = detectionData.long_parameter_list.data.long_parameter_list;
             if (longparameter) {
                 longparameter.forEach(longparameterobj => {
-                    if (longparameterobj.long_parameter === true) {
-                        const range = new vscode.Range(
-                            new vscode.Position(longparameterobj.line_number - 1, 0),
-                            new vscode.Position(longparameterobj.line_number - 1, 100)
-                        );
-                        const message = `Long parameter list detected: ${longparameterobj.function_name} with ${longparameterobj.long_parameter_count} parameters`;
-                        diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-                        console.log("longparameter:", longparameter);
-                    }
-                }
+            if(longparameterobj.long_parameter===true){
+                const range = new vscode.Range(
+                    new vscode.Position(longparameterobj.line_number - 1, 0), 
+                    new vscode.Position(longparameterobj.line_number - 1, 100) 
                 );
+                const message = `Long parameter list detected: ${longparameterobj.function_name} with ${longparameterobj.long_parameter_count} parameters`;
+                diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+                console.log("longparameter:", longparameter);
             }
         }
+        );
+        }
+    }
 
         // if (detectionData.unused_variables?.success && detectionData.unused_variables.data) {
         //     const unusedVars = (detectionData.unused_variables.data as UnusedVariablesResponse).unused_variables;
