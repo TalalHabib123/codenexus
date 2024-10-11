@@ -114,3 +114,66 @@ function testWebSocketConnection() {
         data: taskData
     }));
 }
+
+function showCodeSmellsInProblemsTab(
+    FileDetectionData: { [key: string]: DetectionResponse },
+    diagnosticCollection: vscode.DiagnosticCollection
+) {
+    diagnosticCollection.clear();
+
+    for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
+        const diagnostics: vscode.Diagnostic[] = [];
+
+        if (detectionData.long_parameter_list?.success && detectionData.long_parameter_list.data && 'long_parameter_list' in detectionData.long_parameter_list.data) {
+            const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
+            if (longparameter) {
+                longparameter.forEach(longparameterobj => {
+            if(longparameterobj.long_parameter===true){
+                const range = new vscode.Range(
+                    new vscode.Position(longparameterobj.line_number - 1, 0), 
+                    new vscode.Position(longparameterobj.line_number - 1, 100) 
+                );
+                const message = `Long parameter list detected: ${longparameterobj.function_name} with ${longparameterobj.long_parameter_count} parameters`;
+                diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+                console.log("longparameter:", longparameter);
+            }
+        }
+        );
+        }
+    }
+    if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
+        const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+        if (magicNumber) {
+            magicNumber.forEach(magicNumberobj => {
+            const range = new vscode.Range(
+                new vscode.Position(magicNumberobj.line_number - 1, 0), 
+                new vscode.Position(magicNumberobj.line_number - 1, 100) 
+            );
+            const message = `Magic number detected: ${magicNumberobj.magic_number}`;
+                diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+        }
+        );
+        }
+    }
+    // if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
+    //     const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+    //     if (magicNumber) {
+    //         magicNumber.forEach(magicNumberobj => {
+    //         const range = new vscode.Range(
+    //             new vscode.Position(magicNumberobj.line_number - 1, 0), 
+    //             new vscode.Position(magicNumberobj.line_number - 1, 100) 
+    //         );
+    //         const message = `Magic number detected: ${magicNumberobj.magic_number}`;
+    //             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+    //     }
+    //     );
+    //     }
+    // }
+
+
+
+        const uri = vscode.Uri.file(filePath);
+        diagnosticCollection.set(uri, diagnostics);
+    
+}
+}

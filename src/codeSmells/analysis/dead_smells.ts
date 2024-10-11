@@ -134,7 +134,19 @@ async function getDeadCodeSmells(
         }
     }
     for (const [filePath, data] of Object.entries(DeadCodeData)) {
-        
+        if (!FileDetectionData[filePath]) {
+            FileDetectionData[filePath] = { success: false, dead_code: { success: false, data: [] } };
+        }
+    
+        if (!Array.isArray(FileDetectionData[filePath].dead_code)) {
+            FileDetectionData[filePath].dead_code = { success: false, data: [] };
+        }
+    
+        FileDetectionData[filePath].dead_code = data;
+        if (data)
+        {
+            FileDetectionData[filePath].success = true;
+        }
     }
     return FileDetectionData;
 }

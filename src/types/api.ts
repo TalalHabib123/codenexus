@@ -103,11 +103,16 @@ interface UnusedVariablesResponse {
     error?: string | null;
 }
 
+interface NamingConventionVars {
+    variable: string;
+    line_number: number;
+}
 
 interface InconsistentNamingDetails {
     type: string;
     total_count: number;
     type_count: number;
+    vars: NamingConventionVars[];
 }
 
 interface InconsistentNamingResponse {
