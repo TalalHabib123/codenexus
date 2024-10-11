@@ -141,26 +141,36 @@ function showCodeSmellsInProblemsTab(
         );
         }
     }
+    if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
+        const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+        if (magicNumber) {
+            magicNumber.forEach(magicNumberobj => {
+            const range = new vscode.Range(
+                new vscode.Position(magicNumberobj.line_number - 1, 0), 
+                new vscode.Position(magicNumberobj.line_number - 1, 100) 
+            );
+            const message = `Magic number detected: ${magicNumberobj.magic_number}`;
+                diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+        }
+        );
+        }
+    }
+    // if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
+    //     const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+    //     if (magicNumber) {
+    //         magicNumber.forEach(magicNumberobj => {
+    //         const range = new vscode.Range(
+    //             new vscode.Position(magicNumberobj.line_number - 1, 0), 
+    //             new vscode.Position(magicNumberobj.line_number - 1, 100) 
+    //         );
+    //         const message = `Magic number detected: ${magicNumberobj.magic_number}`;
+    //             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+    //     }
+    //     );
+    //     }
+    // }
 
-        // if (detectionData.unused_variables?.success && detectionData.unused_variables.data) {
-        //     const unusedVars = (detectionData.unused_variables.data as UnusedVariablesResponse).unused_variables;
-        //     unusedVars?.forEach(unusedVar => {
-        //         const range = new vscode.Range(new vscode.Position(unusedVar.line_number - 1, 0), new vscode.Position(unusedVar.line_number - 1, 100));
-        //         const message = `Unused variable: ${unusedVar.variable_name}`;
-        //         diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-        //     });
-        // }
 
-        // if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data) {
-        //     const magicNumbers = (detectionData.magic_numbers.data as MagicNumbersResponse).magic_numbers;
-        //     magicNumbers?.forEach(magicNumber => {
-        //         const range = new vscode.Range(new vscode.Position(magicNumber.line_number - 1, 0), new vscode.Position(magicNumber.line_number - 1, 100));
-        //         const message = `Magic number detected: ${magicNumber.magic_number}`;
-        //         diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-        //     });
-        // }
-
-        // Add similar conditions for other code smells...
 
         const uri = vscode.Uri.file(filePath);
         diagnosticCollection.set(uri, diagnostics);
