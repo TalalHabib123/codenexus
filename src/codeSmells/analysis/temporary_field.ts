@@ -24,8 +24,20 @@ async function getTemporaryFieldSmells(
         }
     }
 
-    for(const [filePath, data] of Object.entries(TemporaryFieldData)) {
+    for (const [filePath, data] of Object.entries(TemporaryFieldData)) {
+        if (!FileDetectionData[filePath]) {
+            FileDetectionData[filePath] = { success: false, temporary_field: { success: false, data: [] } };
+        }
+    
+        if (!Array.isArray(FileDetectionData[filePath].temporary_field)) {
+            FileDetectionData[filePath].temporary_field = { success: false, data: [] };
+        }
+    
         FileDetectionData[filePath].temporary_field = data;
+        if (data)
+        {
+            FileDetectionData[filePath].success = true;
+        }
     }
     return FileDetectionData;
 }

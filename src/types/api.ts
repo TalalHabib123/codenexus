@@ -67,10 +67,55 @@ interface ComplexConditionalResponse {
 }
 
 
+interface MagicNumbersDetails {
+    magic_number: number;
+    line_number: number;
+}
+
+interface MagicNumbersResponse {
+    magic_numbers?: MagicNumbersDetails[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
+interface ParameterListDetails {
+    function_name: string;
+    parameters: string[];
+    long_parameter_count: number;
+    long_parameter: boolean;
+    line_number: number;
+}
+
+interface LongParameterListResponse {
+    long_parameter_list?: ParameterListDetails[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
+interface UnusedVariablesDetails {
+    variable_name: string;
+    line_number: number;
+}
+
+interface UnusedVariablesResponse {
+    unused_variables?: UnusedVariablesDetails[] | null;
+    success: boolean;
+    error?: string | null;
+}
+
+
 interface SubDetectionResponse {
     success: boolean;
     error?: string;
-    data?: string[] | ComplexConditionalResponse | VariableConflictResponse | TemporaryVariableResponse | UnreachableResponse | DeadCodeResponse; 
+    data?: string[] | 
+            ComplexConditionalResponse | 
+            VariableConflictResponse |
+            TemporaryVariableResponse | 
+            UnreachableResponse | 
+            DeadCodeResponse | 
+            MagicNumbersResponse | 
+            LongParameterListResponse |
+            UnusedVariablesResponse; 
 }
 
 interface DetectionResponse {
@@ -119,5 +164,8 @@ export { CodeResponse,
     UnreachableResponse,
     VariableConflictResponse,
     TemporaryVariableResponse,
-    ComplexConditionalResponse
+    ComplexConditionalResponse,
+    MagicNumbersResponse, 
+    LongParameterListResponse,
+    UnusedVariablesResponse,
 };
