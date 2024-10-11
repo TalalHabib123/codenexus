@@ -150,7 +150,7 @@ interface SubDetectionResponse {
             MagicNumbersResponse | 
             LongParameterListResponse |
             UnusedVariablesResponse |
-            InconsistentNamingResponse |
+            InconsistentNamingResponse | 
             DuplicateCodeResponse; 
 }
 

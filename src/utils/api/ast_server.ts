@@ -2,7 +2,6 @@ import * as path from 'path';
 import axios from 'axios';
 import { CodeResponse, Response, DetectionResponse } from '../../types/api';
 import { BASE_URL } from './api';
-import { addDiagnostic } from '../ui/problemsTab';
 import { log } from 'console';
 
 // Generic error handler for failed requests
