@@ -151,7 +151,20 @@ export function showCodeSmellsInProblemsTab(
 
                 diagnostics.push(new vscode.Diagnostic(range, `${classDetail} was defined but never used`, vscode.DiagnosticSeverity.Warning));
         });
-    }
+//temporary field
+  if (detectionData.temporary_field?.success && detectionData.temporary_field && 'temporary_fields' in detectionData.temporary_field) {
+    const tempField =  detectionData.temporary_field.temporary_fields;
+    console.log("intempfiedl");
+    console.log("tempField",tempField);
+    if (Array.isArray(tempField)) {
+        tempField.forEach(tempFieldobj => {
+        const range = new vscode.Range(
+            new vscode.Position(0 , 0), 
+            new vscode.Position(0, 100) 
+        );
+        const message = `Temporary detected: ${tempFieldobj}`;
+            diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+    });
     if (Array.isArray(funcNames)) {
         funcNames.forEach((funcName) => {
             const range = new vscode.Range(
@@ -228,3 +241,4 @@ export function createFolderStructureProvider(workspaceRoot: string | undefined)
       getTreeItem
     };
   }
+}}}
