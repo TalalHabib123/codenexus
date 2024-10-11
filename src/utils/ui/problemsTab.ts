@@ -192,9 +192,9 @@ export function showCodeSmellsInProblemsTab(
       diagnosticCollection.set(uri, diagnostics);
   
 }
-}
 
-
+    }}}
+  }
 // Create a FolderStructureProvider function
 export function createFolderStructureProvider(workspaceRoot: string | undefined): vscode.TreeDataProvider<vscode.TreeItem> {
   
@@ -240,5 +240,4 @@ export function createFolderStructureProvider(workspaceRoot: string | undefined)
       getChildren,
       getTreeItem
     };
-  }
-}}}
+}
