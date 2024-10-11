@@ -6,7 +6,7 @@ import { traverseFolder, folderStructure } from './utils/codebase_analysis/folde
 import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency';
 import { detectCodeSmells } from './codeSmells/detection';
 import WebSocket from 'ws';
-
+import {createFolderStructureProvider }from './utils/ui/problemsTab';
 let ws: WebSocket | null = null;
 
 
@@ -15,6 +15,7 @@ const FileDetectionData: { [key: string]: DetectionResponse } = {};
 const folderStructureData: { [key: string]: FolderStructure } = {};
 
 export async function activate(context: vscode.ExtensionContext) {
+
     const workspaceFolders = vscode.workspace.workspaceFolders;
 
     const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
@@ -30,6 +31,18 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     context.workspaceState.update('processedFiles', allFiles);
+    const workspaceRoot = vscode.workspace.rootPath;
+    const folderStructureProvider = createFolderStructureProvider(workspaceRoot);
+    vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
+  
+    // // Optionally, add a command to refresh the folder structure view
+    // context.subscriptions.push(
+    //   vscode.commands.registerCommand('myExtension.refreshFolderStructure', () => {
+    //     vscode.window.createTreeView('myFolderStructureView', {
+    //       treeDataProvider: createFolderStructureProvider(workspaceRoot)
+    //     });
+    //   })
+    // );
 
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
         sendFileToServer(filePath, content, fileData)
@@ -39,11 +52,11 @@ export async function activate(context: vscode.ExtensionContext) {
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
     // console.log(dependencyGraph);
 
-    // const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
-    //     detection_api(filePath, content, fileData, FileDetectionData)
-    // );
+    const detectionTasksPromises = Object.entries(allFiles).map(([filePath, content]) =>
+        detection_api(filePath, content, fileData, FileDetectionData)
+    );
 
-    // await Promise.all(detectionTasksPromises);
+    await Promise.all(detectionTasksPromises);
     // await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
 }
 
@@ -133,3 +146,4 @@ function testWebSocketConnection() {
         data: taskData
     }));
 }
+
