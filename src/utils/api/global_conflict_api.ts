@@ -10,7 +10,7 @@ async function sendFileForGlobalConflictAnalysis(
     fileData: { [key: string]: VariableConflictResponse }) {
     try {
         const fileName = path.basename(filePath);
-        const response = await axios.post<VariableConflictResponse>(`${BASE_URL}/detection/global-conflict`, { code: content, global_variables: global_variables });
+        const response = await axios.post<VariableConflictResponse>(`${BASE_URL}/detection/global-conflict`, { code: content, global_variables });
         const responseData = response.data;
         if (responseData.success) {
             console.log(`File ${fileName} sent successfully.`);
