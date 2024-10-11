@@ -46,10 +46,10 @@ export async function activate(context: vscode.ExtensionContext) {
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
 
-    // Show detected code smells in the Problems tab
+    // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
 
-    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders);
+    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders,diagnosticCollection);
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {

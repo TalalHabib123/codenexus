@@ -12,7 +12,7 @@ export function showCodeSmellsInProblemsTab(
   diagnosticCollection: vscode.DiagnosticCollection
 ) {
   diagnosticCollection.clear();
-
+//long parameter
   for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
       const diagnostics: vscode.Diagnostic[] = [];
 
@@ -20,7 +20,7 @@ export function showCodeSmellsInProblemsTab(
           const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
           if (longparameter) {
               longparameter.forEach(longparameterobj => {
-          if(longparameterobj.long_parameter=true){
+          if(longparameterobj.long_parameter===true){
               const range = new vscode.Range(
                   new vscode.Position(longparameterobj.line_number - 1, 0), 
                   new vscode.Position(longparameterobj.line_number - 1, 100) 
@@ -33,6 +33,7 @@ export function showCodeSmellsInProblemsTab(
       );
       }
   }
+  //magic number
   if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
       const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
       if (magicNumber) {
@@ -84,7 +85,7 @@ export function showCodeSmellsInProblemsTab(
   }
   //Global conflict
   if (detectionData.global_conflict?.success && detectionData.global_conflict.data && 'conflicts_report' in detectionData. global_conflict.data) {
-    const globalVariable =  detectionData. global_conflict.data.conflicts_report;
+    const globalVariable =  detectionData.global_conflict.data.conflicts_report;
   console.log("global",globalVariable);
     if (globalVariable) {
         globalVariable.forEach (globalVariableobj => {
@@ -107,7 +108,37 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
     );
     }
 }
-
+//unused variable
+  if (detectionData.unused_variables?.success && detectionData.unused_variables.data && 'unused_variables' in detectionData.unused_variables.data) {
+      const unusedVar =  detectionData.unused_variables.data.unused_variables;
+      if (unusedVar) {
+          unusedVar.forEach(unusedVarobj => {
+          const range = new vscode.Range(
+              new vscode.Position(unusedVarobj.line_number - 1, 0), 
+              new vscode.Position(unusedVarobj.line_number - 1, 100) 
+          );
+          const message = `Unused variable detected: ${unusedVarobj.variable_name}`;
+              diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+      }
+      );
+      }
+  }
+  //unreachable code   unreachable_code
+  if (detectionData.unreachable_code?.success && detectionData.unreachable_code.data && 'unreachable_code' in detectionData.unreachable_code.data) {
+    const unusedVar =  detectionData.unreachable_code.data.unreachable_code;
+    if (unusedVar) {
+        unusedVar.forEach(unusedVarobj => {
+          const range = new vscode.Range(
+            new vscode.Position(2- 1, 0), 
+            new vscode.Position(3 - 1, 100) 
+        );
+    
+        const message = `Dead Code detected: ${unusedVarobj}`;
+            diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+    }
+    );
+    }
+}
 
 
       const uri = vscode.Uri.file(filePath);

@@ -4,19 +4,20 @@ import * as fs from 'fs';
 import { FileNode } from '../../types/graph';
 import { detectCodeSmells } from '../../codeSmells/detection';
 import { CodeResponse, DetectionResponse } from '../../types/api';
-
+import{showCodeSmellsInProblemsTab} from '../ui/problemsTab';
 export const fileWatcherEventHandler = (
   context: vscode.ExtensionContext,
   fileData: { [key: string]: CodeResponse },
-  detectionData: { [key: string]: DetectionResponse },
+  FileDetectionData: { [key: string]: DetectionResponse },
   dependencyGraph: { [key: string]: Map<string, FileNode> },
-  folders: string[]
+  folders: string[],
+  diagnosticCollection: vscode.DiagnosticCollection
 ) => {
   const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.py', false, false, false);
 
   fileWatcher.onDidCreate(uri => {
     // Add the file to the dependency graph and check its compilability
-    checkCompilable(uri.fsPath, fileData, detectionData, dependencyGraph, folders);
+    checkCompilable(uri.fsPath, fileData, FileDetectionData, dependencyGraph, folders,diagnosticCollection);
   });
 
   fileWatcher.onDidDelete(uri => {
@@ -36,7 +37,7 @@ export const fileWatcherEventHandler = (
 
     debounceTimers[filePath] = setTimeout(() => {
       if (filePath.endsWith('.py')) {
-        checkCompilable(filePath, fileData, detectionData, dependencyGraph, folders);
+        checkCompilable(filePath, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection);
       }
     }, 1000); 
   });
@@ -45,9 +46,10 @@ export const fileWatcherEventHandler = (
 async function checkCompilable(
   filePath: string,
   fileData: { [key: string]: CodeResponse },
-  detectionData: { [key: string]: DetectionResponse },
+  FileDetectionData: { [key: string]: DetectionResponse },
   dependencyGraph: { [key: string]: Map<string, FileNode> },
-  folders: string[]
+  folders: string[],
+  diagnosticCollection: vscode.DiagnosticCollection
 ) {
  
   if (filePath.endsWith('.pyc') || filePath.includes('__pycache__')) {
@@ -68,7 +70,9 @@ async function checkCompilable(
       const newFile = { [filePath]: content };
 
       // Detect code smells after successful compilation
-      await detectCodeSmells(dependencyGraph, fileData, folders, newFile, detectionData);
+      await detectCodeSmells(dependencyGraph, fileData, folders, newFile, FileDetectionData);
+       // Show detected code smells in the Problems tab
+    showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
     } catch (readError) {
       console.error(`Error reading file ${filePath}:`, readError);
     }
