@@ -12,6 +12,9 @@ export const getNamingConventionSmells = async (
         }
         
         let detectionData = await detectNamingConvention(data);
+        if(!FileDetectionData[filePath]){
+            FileDetectionData[filePath] = { success: false, naming_convention: { success: false, data: [] } };
+        }
         if (detectionData.data.success) {
             FileDetectionData[filePath].naming_convention = {
                     success: true,

@@ -15,6 +15,9 @@ export const getMagicNumberSmells = async (
         }
         
         let detectionData = await detectMagicNumbers(filePath, data, fileData, FileDetectionData);
+        if(!FileDetectionData[filePath]){
+            FileDetectionData[filePath] = { success: false, magic_numbers: { success: false, data: [] } };
+        }
         if (detectionData.data.success) {
             FileDetectionData[filePath].magic_numbers = {
                     success: true,

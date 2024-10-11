@@ -12,7 +12,9 @@ export const getParameterListSmells = async (
         }
         
         let detectionData = await detectLongParameterList(data);
-        console.log("detectionData:", detectionData);
+        if(!FileDetectionData[filePath]){
+            FileDetectionData[filePath] = { success: false, long_parameter_list: { success: false, data: [] } };
+        }
         if (detectionData.data.success) {
             FileDetectionData[filePath].long_parameter_list = {
                     success: true,

@@ -14,8 +14,10 @@ export const getUnusedVarSmells = async (
         }
         
         let detectionData = await detectUnusedVars(data);
+        if(!FileDetectionData[filePath]){
+            FileDetectionData[filePath] = { success: false, unused_variables: { success: false, data: [] } };
+        }
         if (detectionData.data.success) {
-            console.log("detectionData:", detectionData);
             FileDetectionData[filePath].unused_variables = {
                     success: true,
                     data: detectionData.data
