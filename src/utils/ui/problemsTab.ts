@@ -121,9 +121,10 @@ export function showCodeSmellsInProblemsTab(
   } 
   //unreachable code    
   if (detectionData.unreachable_code?.success && detectionData.unreachable_code && 'unreachable_code' in detectionData.unreachable_code) {
-    const  unreachable =  detectionData.unreachable_code.unreachable_code;
-    if ( unreachable) {
-      unreachable.forEach((unreachableCode, index) => {
+    const unreachable = detectionData.unreachable_code.unreachable_code;
+ 
+    if (Array.isArray(unreachable)) {
+      unreachable.forEach((unreachableCode,index) => {
         const range = new vscode.Range(
             new vscode.Position(0, 0), 
             new vscode.Position(0, 100)
