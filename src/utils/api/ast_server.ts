@@ -92,30 +92,7 @@ async function sendFileToServer(filePath: string, content: string, fileData: { [
 //     await postToServer(filePath, content, fileData, '/detection/duplicated-code', detectionData);
 // };
 
-// const detectUnusedVariables = async (filePath: string, content: string,
-//     fileData: { [key: string]: CodeResponse },
-//     detectionData: { [key: string]: DetectionResponse }) => {
-//     await postToServer(filePath, content, fileData, '/detection/unused-variables', detectionData);
-// };
 
-// const detectLongParameterList = async (filePath: string, content: string,
-//     fileData: { [key: string]: CodeResponse },
-//     detectionData: { [key: string]: DetectionResponse }) => {
-//     let longParams = await postToServer(filePath, content, fileData, '/detection/parameter-list', detectionData);
-//     console.log("long params:", longParams);
-//     Object.entries(longParams).map(([func, val]) => {
-//         if (val) {
-//             addDiagnostic(`Uh Oh! Function ${func} has a long parameter list`, filePath);
-//         }
-//     });
-// };  DONE
-
-// const detectNamingConventions = async (filePath: string, content: string,
-//     fileData: { [key: string]: CodeResponse },
-//     detectionData: { [key: string]: DetectionResponse }) => {
-//     await postToServer(filePath, content, fileData, '/detection/naming-convention', detectionData);
-
-// };
 
 // const detectionResponseHandler = async (
 //     responseData: Response,

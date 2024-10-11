@@ -8,6 +8,8 @@ import { getGlobalConflictSmells } from "./analysis/global_conflict";
 import { getMagicNumberSmells } from "./analysis/magic_numbers";
 import { getParameterListSmells } from "./analysis/long_parameter_list";
 import { getUnusedVarSmells } from "./analysis/unused_var_smell";
+import { get } from "axios";
+import { getNamingConventionSmells } from "./analysis/naming_convention";
 
 export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<string, FileNode> }, 
     fileData: { [key: string]: CodeResponse },
@@ -30,6 +32,8 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
     await getParameterListSmells(fileData, newFiles, FileDetectionData);
 
     await getUnusedVarSmells(fileData, newFiles, FileDetectionData);
+
+    await getNamingConventionSmells(fileData, newFiles, FileDetectionData);
 
     console.log(FileDetectionData);
 }

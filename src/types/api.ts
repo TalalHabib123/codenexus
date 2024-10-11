@@ -104,6 +104,18 @@ interface UnusedVariablesResponse {
 }
 
 
+interface InconsistentNamingDetails {
+    type: string;
+    total_count: number;
+    type_count: number;
+}
+
+interface InconsistentNamingResponse {
+    inconsistent_naming?: InconsistentNamingDetails[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
 interface SubDetectionResponse {
     success: boolean;
     error?: string;
@@ -115,7 +127,8 @@ interface SubDetectionResponse {
             DeadCodeResponse | 
             MagicNumbersResponse | 
             LongParameterListResponse |
-            UnusedVariablesResponse; 
+            UnusedVariablesResponse |
+            InconsistentNamingResponse; 
 }
 
 interface DetectionResponse {
@@ -168,4 +181,5 @@ export { CodeResponse,
     MagicNumbersResponse, 
     LongParameterListResponse,
     UnusedVariablesResponse,
+    InconsistentNamingResponse,
 };
