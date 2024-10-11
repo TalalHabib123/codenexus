@@ -66,7 +66,7 @@ function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
     return content;
 }
 
-export function deactivate() {
+export function deactivate() { 
     if (ws) {
         ws.close();
         ws = null;
@@ -125,10 +125,10 @@ function showCodeSmellsInProblemsTab(
         const diagnostics: vscode.Diagnostic[] = [];
 
         if (detectionData.long_parameter_list?.success && detectionData.long_parameter_list.data && 'long_parameter_list' in detectionData.long_parameter_list.data) {
-            const longparameter = detectionData.long_parameter_list.data.long_parameter_list;
+            const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
             if (longparameter) {
                 longparameter.forEach(longparameterobj => {
-            if(longparameterobj.long_parameter===true){
+            if(longparameterobj.long_parameter==true){
                 const range = new vscode.Range(
                     new vscode.Position(longparameterobj.line_number - 1, 0), 
                     new vscode.Position(longparameterobj.line_number - 1, 100) 
@@ -141,29 +141,39 @@ function showCodeSmellsInProblemsTab(
         );
         }
     }
+    if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
+        const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+        if (magicNumber) {
+            magicNumber.forEach(magicNumberobj => {
+            const range = new vscode.Range(
+                new vscode.Position(magicNumberobj.line_number - 1, 0), 
+                new vscode.Position(magicNumberobj.line_number - 1, 100) 
+            );
+            const message = `Magic number detected: ${magicNumberobj.magic_number}`;
+                diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+        }
+        );
+        }
+    }
+    // if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
+    //     const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+    //     if (magicNumber) {
+    //         magicNumber.forEach(magicNumberobj => {
+    //         const range = new vscode.Range(
+    //             new vscode.Position(magicNumberobj.line_number - 1, 0), 
+    //             new vscode.Position(magicNumberobj.line_number - 1, 100) 
+    //         );
+    //         const message = `Magic number detected: ${magicNumberobj.magic_number}`;
+    //             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+    //     }
+    //     );
+    //     }
+    // }
 
-        // if (detectionData.unused_variables?.success && detectionData.unused_variables.data) {
-        //     const unusedVars = (detectionData.unused_variables.data as UnusedVariablesResponse).unused_variables;
-        //     unusedVars?.forEach(unusedVar => {
-        //         const range = new vscode.Range(new vscode.Position(unusedVar.line_number - 1, 0), new vscode.Position(unusedVar.line_number - 1, 100));
-        //         const message = `Unused variable: ${unusedVar.variable_name}`;
-        //         diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-        //     });
-        // }
 
-        // if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data) {
-        //     const magicNumbers = (detectionData.magic_numbers.data as MagicNumbersResponse).magic_numbers;
-        //     magicNumbers?.forEach(magicNumber => {
-        //         const range = new vscode.Range(new vscode.Position(magicNumber.line_number - 1, 0), new vscode.Position(magicNumber.line_number - 1, 100));
-        //         const message = `Magic number detected: ${magicNumber.magic_number}`;
-        //         diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-        //     });
-        // }
-
-        // Add similar conditions for other code smells...
 
         const uri = vscode.Uri.file(filePath);
         diagnosticCollection.set(uri, diagnostics);
-
-    }
+    
+}
 }
