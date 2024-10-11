@@ -20,7 +20,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
-    // context.subscriptions.push(diagnosticCollection);
+    context.subscriptions.push(diagnosticCollection);
 
     const workspaceFolders = vscode.workspace.workspaceFolders;
 

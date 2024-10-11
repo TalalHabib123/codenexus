@@ -16,7 +16,6 @@ export function showCodeSmellsInProblemsTab(
 //long parameter
   for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
       const diagnostics: vscode.Diagnostic[] = [];
-
       if (detectionData.long_parameter_list?.success && detectionData.long_parameter_list.data && 'long_parameter_list' in detectionData.long_parameter_list.data) {
           const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
           if (longparameter) {
@@ -186,14 +185,13 @@ export function showCodeSmellsInProblemsTab(
 
     
   }
-
-
-      const uri = vscode.Uri.file(filePath);
-      diagnosticCollection.set(uri, diagnostics);
   
 }
-
+const uri = vscode.Uri.file(filePath);
+    diagnosticCollection.set(uri, diagnostics);
     }}}
+    
+
   }
 // Create a FolderStructureProvider function
 export function createFolderStructureProvider(workspaceRoot: string | undefined): vscode.TreeDataProvider<vscode.TreeItem> {
