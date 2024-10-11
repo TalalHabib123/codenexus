@@ -170,7 +170,7 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
             new vscode.Position(0 , 0), 
             new vscode.Position(0, 100) 
         );
-        const message = `Temporary detected: ${tempFieldobj.tempField}`;
+        const message = `Temporary detected: ${tempFieldobj}`;
             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
     }
     );
