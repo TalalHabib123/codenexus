@@ -82,12 +82,12 @@ async function getDeadCodeSmells(
                                         if (dead_code_data.class_details && dead_code_data.class_details.length > 0) {
                                             for (const class_detail of dead_code_data.class_details) {
                                                 if (class_detail.class_name === exports_name) {
-                                                    class_detail.used = true;
                                                     if (fileData[exporting_file] && fileData[exporting_file].code) {
                                                         const data : DeadClassResponse  = await getClassDeadSmells(fileData[exporting_file].code, exports_name);
                                                         if (data.success && data.class_details) {
                                                             const methods = data.class_details[0];
                                                             const variables = data.class_details[1];
+                                                            class_detail.has_instance = true;
                                                             if (Array.isArray(methods) && methods.length > 0) {
                                                                 if (Array.isArray(dead_code_data.class_details[1]) && dead_code_data.class_details[1].length > 0)
                                                                 {

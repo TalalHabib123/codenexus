@@ -84,7 +84,7 @@ async function getGlobalConflictSmells(
             }
         }
     }
-
+    console.log("Global Conflict Data:", GlobalConflictData);
     for (const [filePath, data] of Object.entries(GlobalConflictData)) {
         // Ensure that FileDetectionData[filePath] exists and has a dead_code array.
         if (!FileDetectionData[filePath]) {

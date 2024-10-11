@@ -192,7 +192,7 @@ interface DeadCodeResponse {
 }
 
 interface DeadClassResponse {
-    class_details?: { [key: string]: string[] }[];
+    class_details?: { [key: string]: string[] | Boolean }[];
     success: boolean;
     error?: string;
 }
