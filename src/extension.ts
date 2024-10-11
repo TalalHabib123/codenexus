@@ -7,15 +7,17 @@ import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency
 import { detectCodeSmells } from './codeSmells/detection';
 import { fileWatcherEventHandler } from './utils/workspace-update/update';
 import WebSocket from 'ws';
-import {createFolderStructureProvider }from './utils/ui/problemsTab';
+import { createFolderStructureProvider } from './utils/ui/problemsTab';
+import { LongParameterListResponse } from './types/api';
+
 let ws: WebSocket | null = null;
-
-
 const fileData: { [key: string]: CodeResponse } = {};
 const FileDetectionData: { [key: string]: DetectionResponse } = {};
 const folderStructureData: { [key: string]: FolderStructure } = {};
 
 export async function activate(context: vscode.ExtensionContext) {
+    const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
+    context.subscriptions.push(diagnosticCollection);
 
     const workspaceFolders = vscode.workspace.workspaceFolders;
 
@@ -35,15 +37,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const workspaceRoot = vscode.workspace.rootPath;
     const folderStructureProvider = createFolderStructureProvider(workspaceRoot);
     vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
-  
-    // // Optionally, add a command to refresh the folder structure view
-    // context.subscriptions.push(
-    //   vscode.commands.registerCommand('myExtension.refreshFolderStructure', () => {
-    //     vscode.window.createTreeView('myFolderStructureView', {
-    //       treeDataProvider: createFolderStructureProvider(workspaceRoot)
-    //     });
-    //   })
-    // );
 
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
         sendFileToServer(filePath, content, fileData)
@@ -52,6 +45,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+
+    // Show detected code smells in the Problems tab
+    showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+
     fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders);
 }
 
@@ -69,7 +66,6 @@ function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
     return content;
 }
 
-
 export function deactivate() { 
     if (ws) {
         ws.close();
@@ -77,11 +73,8 @@ export function deactivate() {
     }
 }
 
-
 function establishWebSocketConnection() {
-    // Establish WebSocket connection to the API Gateway
     ws = new WebSocket('ws://127.0.0.1:8000/websockets/');
-
     ws.on('open', () => {
         vscode.window.showInformationMessage('WebSocket connected to API Gateway.');
         testWebSocketConnection();
@@ -90,7 +83,6 @@ function establishWebSocketConnection() {
     ws.on('message', (data: string) => {
         const message = JSON.parse(data);
         console.log('Received message:', message);
-
         if (message.status === 'task_completed') {
             vscode.window.showInformationMessage(`Task completed: ${message.processed_data}`);
         }
@@ -102,10 +94,9 @@ function establishWebSocketConnection() {
 
     ws.on('close', () => {
         vscode.window.showWarningMessage('WebSocket connection closed. Reconnecting...');
-        // Attempt to reconnect after a delay
         setTimeout(() => {
             establishWebSocketConnection();
-        }, 5000); // 5 seconds delay
+        }, 5000);
     });
 }
 
@@ -124,3 +115,54 @@ function testWebSocketConnection() {
     }));
 }
 
+function showCodeSmellsInProblemsTab(
+    FileDetectionData: { [key: string]: DetectionResponse },
+    diagnosticCollection: vscode.DiagnosticCollection
+) {
+    diagnosticCollection.clear();
+
+    for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
+        const diagnostics: vscode.Diagnostic[] = [];
+
+        if (detectionData.long_parameter_list?.success && detectionData.long_parameter_list.data && 'long_parameter_list' in detectionData.long_parameter_list.data) {
+            const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
+            if (longparameter) {
+                longparameter.forEach(longparameterobj => {
+            if(longparameterobj.long_parameter==true){
+                const range = new vscode.Range(
+                    new vscode.Position(longparameterobj.line_number - 1, 0), 
+                    new vscode.Position(longparameterobj.line_number - 1, 100) 
+                );
+                const message = `Long parameter list detected: ${longparameterobj.function_name} with ${longparameterobj.long_parameter_count} parameters`;
+                diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+                console.log("longparameter:", longparameter);
+            }
+        }
+        );
+        }
+
+        // if (detectionData.unused_variables?.success && detectionData.unused_variables.data) {
+        //     const unusedVars = (detectionData.unused_variables.data as UnusedVariablesResponse).unused_variables;
+        //     unusedVars?.forEach(unusedVar => {
+        //         const range = new vscode.Range(new vscode.Position(unusedVar.line_number - 1, 0), new vscode.Position(unusedVar.line_number - 1, 100));
+        //         const message = `Unused variable: ${unusedVar.variable_name}`;
+        //         diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+        //     });
+        // }
+
+        // if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data) {
+        //     const magicNumbers = (detectionData.magic_numbers.data as MagicNumbersResponse).magic_numbers;
+        //     magicNumbers?.forEach(magicNumber => {
+        //         const range = new vscode.Range(new vscode.Position(magicNumber.line_number - 1, 0), new vscode.Position(magicNumber.line_number - 1, 100));
+        //         const message = `Magic number detected: ${magicNumber.magic_number}`;
+        //         diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+        //     });
+        // }
+
+        // Add similar conditions for other code smells...
+
+        const uri = vscode.Uri.file(filePath);
+        diagnosticCollection.set(uri, diagnostics);
+    }
+}
+}
