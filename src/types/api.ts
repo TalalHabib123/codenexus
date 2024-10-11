@@ -116,6 +116,28 @@ interface InconsistentNamingResponse {
     error?: string | undefined;
 }
 
+
+interface Duplicates {
+    code: string;
+    start_line: number;
+    end_line: number;
+}
+
+interface DuplicateCodeDetails {
+    original_code: string;
+    start_line: number;
+    end_line: number;
+    duplicates: Duplicates[];
+    duplicate_count: number;
+}
+
+interface DuplicateCodeResponse {
+    duplicate_code?: DuplicateCodeDetails[] | null;
+    success: boolean;
+    error?: string | undefined;
+}
+
+
 interface SubDetectionResponse {
     success: boolean;
     error?: string;
@@ -128,7 +150,8 @@ interface SubDetectionResponse {
             MagicNumbersResponse | 
             LongParameterListResponse |
             UnusedVariablesResponse |
-            InconsistentNamingResponse; 
+            InconsistentNamingResponse |
+            DuplicateCodeResponse; 
 }
 
 interface DetectionResponse {
@@ -182,4 +205,5 @@ export { CodeResponse,
     LongParameterListResponse,
     UnusedVariablesResponse,
     InconsistentNamingResponse,
+    DuplicateCodeResponse
 };

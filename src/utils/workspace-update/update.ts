@@ -67,11 +67,8 @@ async function checkCompilable(
       const content = fs.readFileSync(filePath, 'utf-8');
       const newFile = { [filePath]: content };
 
-      // Call the detection API
-      // await detection_api(filePath, content, fileData, detectionData);
-
       // Detect code smells after successful compilation
-      // await detectCodeSmells(dependencyGraph, fileData, folders, newFile, detectionData);
+      await detectCodeSmells(dependencyGraph, fileData, folders, newFile, detectionData);
     } catch (readError) {
       console.error(`Error reading file ${filePath}:`, readError);
     }
