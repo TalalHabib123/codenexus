@@ -20,7 +20,7 @@ export function showCodeSmellsInProblemsTab(
           const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
           if (longparameter) {
               longparameter.forEach(longparameterobj => {
-          if(longparameterobj.long_parameter==true){
+          if(longparameterobj.long_parameter=true){
               const range = new vscode.Range(
                   new vscode.Position(longparameterobj.line_number - 1, 0), 
                   new vscode.Position(longparameterobj.line_number - 1, 100) 
@@ -62,10 +62,10 @@ export function showCodeSmellsInProblemsTab(
   //     );
   //     }
   // }
-  console.log("add")
+  console.log("add");
   if (detectionData. duplicated_code?.success && detectionData. duplicated_code.data && 'duplicate_code' in detectionData. duplicated_code.data) {
     const duplicatedCode =  detectionData. duplicated_code.data.duplicate_code;
-  console.log("duplicatedcode",duplicatedCode)
+  console.log("duplicatedcode",duplicatedCode);
     if (duplicatedCode) {
         duplicatedCode.forEach (duplicatedCodeobj => {
           duplicatedCodeobj.duplicates.forEach(obj=>{
@@ -77,8 +77,8 @@ export function showCodeSmellsInProblemsTab(
             new vscode.Position(obj.end_line - 1, 0), 
             new vscode.Position(obj.end_line - 1, 100) 
         );
-          // const message = `Duplicated code detected: ${obj.magic_number}`;
-          //     diagnostics.push(new vscode.Diagnostic(range,range2, message, vscode.DiagnosticSeverity.Warning));
+          const message = `Duplicated code on line: ${obj.start_line} till line: ${obj.end_line}`;
+             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
           });
        
     }
