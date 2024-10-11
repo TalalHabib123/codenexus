@@ -128,9 +128,10 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
   } 
   //unreachable code    
   if (detectionData.unreachable_code?.success && detectionData.unreachable_code && 'unreachable_code' in detectionData.unreachable_code) {
-    const  unreachable =  detectionData.unreachable_code.unreachable_code;
-    if ( unreachable) {
-      unreachable.forEach((unreachableCode, index) => {
+    const unreachable = detectionData.unreachable_code.unreachable_code;
+ 
+    if (Array.isArray(unreachable)) {
+      unreachable.forEach((unreachableCode,index) => {
         const range = new vscode.Range(
             new vscode.Position(0, 0), 
             new vscode.Position(0, 100)
@@ -138,15 +139,43 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
 
         const message = `Unreachable code detected: ${unreachableCode}`;
         diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-    });
-   
+      });
     }
 }
 
-//overly complex code
+// //overly complex code overly_complex_condition
+//   if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
+//     const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+//     if (magicNumber) {
+//         magicNumber.forEach(magicNumberobj => {
+//         const range = new vscode.Range(
+//             new vscode.Position(magicNumberobj.line_number - 1, 0), 
+//             new vscode.Position(magicNumberobj.line_number - 1, 100) 
+//         );
+//         const message = `Magic number detected: ${magicNumberobj.magic_number}`;
+//             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+//     }
+//     );
+//     }
+// }
 
-
-
+//temporary field
+  if (detectionData.temporary_field?.success && detectionData.temporary_field && 'temporary_fields' in detectionData.temporary_field) {
+    const tempField =  detectionData.temporary_field.temporary_fields;
+    console.log("intempfiedl");
+    console.log("tempField",tempField);
+    if (Array.isArray(tempField)) {
+        tempField.forEach(tempFieldobj => {
+        const range = new vscode.Range(
+            new vscode.Position(0 , 0), 
+            new vscode.Position(0, 100) 
+        );
+        const message = `Temporary detected: ${tempFieldobj.tempField}`;
+            diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
+    }
+    );
+    }
+}
       const uri = vscode.Uri.file(filePath);
       diagnosticCollection.set(uri, diagnostics);
   
