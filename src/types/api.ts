@@ -210,5 +210,7 @@ export { CodeResponse,
     LongParameterListResponse,
     UnusedVariablesResponse,
     InconsistentNamingResponse,
-    DuplicateCodeResponse
+    DuplicateCodeResponse,
+
+    VariableConflictAnalysis
 };

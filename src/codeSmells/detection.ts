@@ -16,25 +16,26 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
     newFiles: { [key: string]: string },
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
-    await getDeadCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData);
 
-    await getUnreachableCodeSmells(fileData, newFiles, FileDetectionData);
+    try {
+        const detect = [
+            getDeadCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData),
+            getUnreachableCodeSmells(fileData, newFiles, FileDetectionData),
+            getTemporaryFieldSmells(fileData, newFiles, FileDetectionData),
+            getComplexConditionalSmells(fileData, newFiles, FileDetectionData),
+            getGlobalConflictSmells(fileData, newFiles, workspaceFolders, FileDetectionData),
+            getMagicNumberSmells(fileData, newFiles, FileDetectionData),
+            getParameterListSmells(fileData, newFiles, FileDetectionData),
+            getUnusedVarSmells(fileData, newFiles, FileDetectionData),
+            getNamingConventionSmells(fileData, newFiles, FileDetectionData),
+            getDuplicateCodeSmells(fileData, newFiles, FileDetectionData)
 
-    await getTemporaryFieldSmells(fileData, newFiles, FileDetectionData);
+        ];
+        await Promise.all(detect);
+        console.log(FileDetectionData);
+    }
+    catch(err){
+        console.error('Error during detection:', err);
+    }
 
-    await getComplexConditionalSmells(fileData, newFiles, FileDetectionData);
-
-    await getGlobalConflictSmells(fileData, newFiles, workspaceFolders, FileDetectionData);
-
-    await getMagicNumberSmells(fileData, newFiles, FileDetectionData);
-
-    await getParameterListSmells(fileData, newFiles, FileDetectionData);
-
-    await getUnusedVarSmells(fileData, newFiles, FileDetectionData);
-
-    await getNamingConventionSmells(fileData, newFiles, FileDetectionData);
-
-    await getDuplicateCodeSmells(fileData, newFiles, FileDetectionData);
-
-    console.log(FileDetectionData);
 }

@@ -12,6 +12,9 @@ export const getDuplicateCodeSmells = async (
         }
         
         let detectionData = await detectDuplicateCode(data);
+        if(!FileDetectionData[filePath]){
+            FileDetectionData[filePath] = { success: false, duplicated_code: { success: false, data: [] } };
+        }
         if (detectionData.data.success) {
             FileDetectionData[filePath].duplicated_code = {
                     success: true,

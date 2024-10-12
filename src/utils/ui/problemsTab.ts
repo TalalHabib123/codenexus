@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { CodeResponse, DetectionResponse } from '../../types/api';
+import { VariableConflictAnalysis } from '../../types/api';
 import { extractUsedAtLines } from '../line_getters';
 
 export function showProblemsTab() {
@@ -16,7 +17,6 @@ export function showCodeSmellsInProblemsTab(
 //long parameter
   for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
       const diagnostics: vscode.Diagnostic[] = [];
-
       if (detectionData.long_parameter_list?.success && detectionData.long_parameter_list.data && 'long_parameter_list' in detectionData.long_parameter_list.data) {
        detectedCodeSmells.add('Long Parameter List');  
        console.log("sjdajd")
@@ -93,29 +93,21 @@ export function showCodeSmellsInProblemsTab(
     }
   }
   //Global conflict
-  if (detectionData.global_conflict?.success && detectionData.global_conflict.data && 'conflicts_report' in detectionData. global_conflict.data) {
+  if (detectionData.global_conflict?.success && detectionData.global_conflict && 'conflicts_report' in detectionData. global_conflict) {
    detectedCodeSmells.add('Global conflict');
-    const globalVariable =  detectionData.global_conflict.data.conflicts_report;
-  console.log("global",globalVariable);
-    if (globalVariable) {
-        globalVariable.forEach (globalVariableobj => {
+    const globalVariable = detectionData.global_conflict.conflicts_report;
+    if (Array.isArray(globalVariable)) {
+        globalVariable.forEach((globalVariableobj: VariableConflictAnalysis) => {
+          
           const range = new vscode.Range(
-            new vscode.Position(globalVariableobj.assignments[0][1] - 1, 0),
-            new vscode.Position(globalVariableobj.assignments[0][1] - 1, 100)
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
         );
-
-        // Create a message for the diagnostic
-        const message = `Variable conflict detected for variable '${globalVariableobj.variable}':
-Assignments: ${globalVariableobj.assignments.map(a => `(${a[0]}, line ${a[1]})`).join(', ')}
-Local Assignments: ${globalVariableobj.local_assignments.map(la => `(${la[0]}, line ${la[1]})`).join(', ')}
-Usages: ${globalVariableobj.usages.map(u => `(${u[0]}, line ${u[1]})`).join(', ')}
-Conflicts: ${globalVariableobj.conflicts.join(', ')}
-Warnings: ${globalVariableobj.warnings.join(', ')}`;
-             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-         
-       
-    }
-    );
+ // Create a message for the diagnostic
+          globalVariableobj.conflicts.forEach(conflict => 
+            diagnostics.push(new vscode.Diagnostic(range, conflict, vscode.DiagnosticSeverity.Warning))
+          );
+        });
     }
 }
 //unused variable
@@ -147,26 +139,25 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
 
         const message = `Unreachable code detected: ${unreachableCode}`;
         diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-      });
+    });
+   
     }
 }
 
-// //overly complex code overly_complex_condition
-//   if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
-//     const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
-//     if (magicNumber) {
-//         magicNumber.forEach(magicNumberobj => {
-//         const range = new vscode.Range(
-//             new vscode.Position(magicNumberobj.line_number - 1, 0), 
-//             new vscode.Position(magicNumberobj.line_number - 1, 100) 
-//         );
-//         const message = `Magic number detected: ${magicNumberobj.magic_number}`;
-//             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-//     }
-//     );
-//     }
-// }
+  if (detectionData.dead_code?.success && 'class_details' in detectionData.dead_code && 'function_names' in detectionData.dead_code && 'global_variables' in detectionData.dead_code) {
+    const classDetails = detectionData.dead_code.class_details;
+    const funcNames = detectionData.dead_code.function_names;
+    const globalVariables = detectionData.dead_code.global_variables;
+    
+    if (Array.isArray(classDetails)) {
+        classDetails.forEach((classDetail) => {
+            const range = new vscode.Range(
+                new vscode.Position(0, 0),
+                new vscode.Position(0, 0)
+            );
 
+                diagnostics.push(new vscode.Diagnostic(range, `${classDetail} was defined but never used`, vscode.DiagnosticSeverity.Warning));
+        });
  // Temporary field
  if (detectionData.temporary_field?.success && detectionData.temporary_field && 'temporary_fields' in detectionData.temporary_field) {
   const tempField = detectionData.temporary_field.temporary_fields;
@@ -188,22 +179,38 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
          
             const message = `Temporary detected: ${tempFieldobj}`;
             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-          }
-        
-       
-        
-      });
-  }
-}
-      const uri = vscode.Uri.file(filePath);
-      diagnosticCollection.set(uri, diagnostics);
+    });
+    if (Array.isArray(funcNames)) {
+        funcNames.forEach((funcName) => {
+            const range = new vscode.Range(
+                new vscode.Position(0, 0),
+                new vscode.Position(0, 0)
+            );
+            diagnostics.push(new vscode.Diagnostic(range, `${funcName} was defined but never used`, vscode.DiagnosticSeverity.Warning));
+        });
+    }
+    if (Array.isArray(globalVariables)) {
+        globalVariables.forEach((globalVariable) => {
+            const range = new vscode.Range(
+                new vscode.Position(0, 0),
+                new vscode.Position(0, 0)
+            );
+            diagnostics.push(new vscode.Diagnostic(range, `${globalVariable} was defined but never used`, vscode.DiagnosticSeverity.Warning));
+        });
+    }
+
     
-  //vscode.commands.executeCommand('package-explorer.refreshCodeSmells');
+  }
   
 }
-}
+const uri = vscode.Uri.file(filePath);
+    diagnosticCollection.set(uri, diagnostics);
+    }}}
+    
+    
+  //vscode.commands.executeCommand('package-explorer.refreshCodeSmells');
 
-
+  }
 // Create a FolderStructureProvider function
 export function createFolderStructureProvider(workspaceRoot: string | undefined): vscode.TreeDataProvider<vscode.TreeItem> {
   
@@ -249,4 +256,4 @@ export function createFolderStructureProvider(workspaceRoot: string | undefined)
       getChildren,
       getTreeItem
     };
-  }
+}
