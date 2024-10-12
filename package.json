@@ -26,12 +26,12 @@
     "views": {
       "package-explorer": [
         {
-          "id": "myFolderStructureView",
-          "name": "Folder Structure"
-        },
-        {
           "id": "package-outline",
           "name": "Code Smells detected"
+        },
+        {
+          "id": "myFolderStructureView",
+          "name": "Folder Structure"
         }
       ]
     },

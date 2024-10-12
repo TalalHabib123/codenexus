@@ -6,7 +6,7 @@ import { extractUsedAtLines } from '../line_getters';
 export function showProblemsTab() {
     vscode.commands.executeCommand('workbench.action.problems.focus');
 }
-
+export let detectedCodeSmells: Set<string> = new Set();
 
 export function showCodeSmellsInProblemsTab(
   FileDetectionData: { [key: string]: DetectionResponse },
@@ -18,7 +18,10 @@ export function showCodeSmellsInProblemsTab(
       const diagnostics: vscode.Diagnostic[] = [];
 
       if (detectionData.long_parameter_list?.success && detectionData.long_parameter_list.data && 'long_parameter_list' in detectionData.long_parameter_list.data) {
-          const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
+       detectedCodeSmells.add('Long Parameter List');  
+       console.log("sjdajd")
+       console.log("lonf",detectedCodeSmells)
+        const longparameter =  detectionData.long_parameter_list.data.long_parameter_list;
           if (longparameter) {
               longparameter.forEach(longparameterobj => {
           if(longparameterobj.long_parameter===true){
@@ -36,7 +39,8 @@ export function showCodeSmellsInProblemsTab(
   }
   //magic number
   if (detectionData.magic_numbers?.success && detectionData.magic_numbers.data && 'magic_numbers' in detectionData.magic_numbers.data) {
-      const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
+   detectedCodeSmells.add('Magic Number');  
+    const magicNumber =  detectionData.magic_numbers.data.magic_numbers;
       if (magicNumber) {
           magicNumber.forEach(magicNumberobj => {
           const range = new vscode.Range(
@@ -51,7 +55,8 @@ export function showCodeSmellsInProblemsTab(
   }
   //Naming convention
   if (detectionData.naming_convention?.success && detectionData.naming_convention.data && 'inconsistent_naming' in detectionData.naming_convention.data) {
-      const namingConven =  detectionData.naming_convention.data.inconsistent_naming;
+   detectedCodeSmells.add('Inconsistent naming convention');  
+    const namingConven =  detectionData.naming_convention.data.inconsistent_naming;
       if (namingConven) {
           namingConven.forEach(namingConvenobj => {
            
@@ -71,7 +76,7 @@ export function showCodeSmellsInProblemsTab(
   //Duplicated code
   if (detectionData. duplicated_code?.success && detectionData. duplicated_code.data && 'duplicate_code' in detectionData. duplicated_code.data) {
     const duplicatedCode =  detectionData. duplicated_code.data.duplicate_code;
- 
+   detectedCodeSmells.add('Duplicated code');
     if (duplicatedCode) {
         duplicatedCode.forEach (duplicatedCodeobj => {
           duplicatedCodeobj.duplicates.forEach(obj=>{
@@ -89,6 +94,7 @@ export function showCodeSmellsInProblemsTab(
   }
   //Global conflict
   if (detectionData.global_conflict?.success && detectionData.global_conflict.data && 'conflicts_report' in detectionData. global_conflict.data) {
+   detectedCodeSmells.add('Global conflict');
     const globalVariable =  detectionData.global_conflict.data.conflicts_report;
   console.log("global",globalVariable);
     if (globalVariable) {
@@ -114,7 +120,8 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
 }
 //unused variable
   if (detectionData.unused_variables?.success && detectionData.unused_variables.data && 'unused_variables' in detectionData.unused_variables.data) {
-      const unusedVar =  detectionData.unused_variables.data.unused_variables;
+   detectedCodeSmells.add('Unused Variable');  
+    const unusedVar =  detectionData.unused_variables.data.unused_variables;
       if (unusedVar) {
           unusedVar.forEach(unusedVarobj => {
           const range = new vscode.Range(
@@ -130,7 +137,7 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
   //unreachable code    
   if (detectionData.unreachable_code?.success && detectionData.unreachable_code && 'unreachable_code' in detectionData.unreachable_code) {
     const unreachable = detectionData.unreachable_code.unreachable_code;
- 
+   detectedCodeSmells.add('Unreachable code');
     if (Array.isArray(unreachable)) {
       unreachable.forEach((unreachableCode,index) => {
         const range = new vscode.Range(
@@ -163,10 +170,10 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
  // Temporary field
  if (detectionData.temporary_field?.success && detectionData.temporary_field && 'temporary_fields' in detectionData.temporary_field) {
   const tempField = detectionData.temporary_field.temporary_fields;
-
+ detectedCodeSmells.add('temporary field');
   if (Array.isArray(tempField)) {
       tempField.forEach(tempFieldobj => {
-          let m; // Declare the variable `m`
+          let m; 
 
           if (extractUsedAtLines(tempFieldobj) != null) {
               m = extractUsedAtLines(tempFieldobj);
@@ -190,6 +197,8 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
 }
       const uri = vscode.Uri.file(filePath);
       diagnosticCollection.set(uri, diagnostics);
+    
+  //vscode.commands.executeCommand('package-explorer.refreshCodeSmells');
   
 }
 }
