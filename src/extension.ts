@@ -9,7 +9,7 @@ import { fileWatcherEventHandler } from './utils/workspace-update/update';
 import WebSocket from 'ws';
 import { createFolderStructureProvider } from './utils/ui/problemsTab';
 import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
-import { detectedCodeSmells} from './utils/ui/problemsTab'
+import { detectedCodeSmells} from './utils/ui/problemsTab';
 
 let ws: WebSocket | null = null;
 const fileData: { [key: string]: CodeResponse } = {};
