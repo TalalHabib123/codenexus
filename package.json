@@ -43,15 +43,19 @@
       {
         "command": "package-explorer.refreshFolderStructure",
         "title": "Refresh Folder Structure"
+      },
+      {
+        "command": "package-explorer.refreshCodeSmells",
+        "title": "Refresh code smell"
       }
     ],
     "configuration": {
-        "properties": {
-            "codenexus.showInlineDiagnostics": {
-                "type": "boolean",
-                "default": false
-            }
+      "properties": {
+        "codenexus.showInlineDiagnostics": {
+          "type": "boolean",
+          "default": false
         }
+      }
     }
   },
   "scripts": {

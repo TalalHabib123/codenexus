@@ -208,7 +208,7 @@ const uri = vscode.Uri.file(filePath);
     }}}
     
     
-  //vscode.commands.executeCommand('package-explorer.refreshCodeSmells');
+  vscode.commands.executeCommand('package-explorer.refreshCodeSmells');
 
   }
 // Create a FolderStructureProvider function

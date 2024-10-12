@@ -55,11 +55,11 @@ export async function activate(context: vscode.ExtensionContext) {
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
 
     fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders,diagnosticCollection);
-    // const codeSmellsProvider = new CodeSmellsProvider();
-    // vscode.window.registerTreeDataProvider('package-outline', codeSmellsProvider);
-    // context.subscriptions.push(
-    //     vscode.commands.registerCommand('package-explorer.refreshCodeSmells', () => codeSmellsProvider.refresh())
-    // );
+    const codeSmellsProvider = new CodeSmellsProvider();
+    vscode.window.registerTreeDataProvider('package-outline', codeSmellsProvider);
+    context.subscriptions.push(
+        vscode.commands.registerCommand('package-explorer.refreshCodeSmells', () => codeSmellsProvider.refresh())
+    );
 }
 
 function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
@@ -125,30 +125,30 @@ function testWebSocketConnection() {
     }));
 }
 
-// class CodeSmellsProvider implements vscode.TreeDataProvider<CodeSmellItem> {
-//     private _onDidChangeTreeData: vscode.EventEmitter<CodeSmellItem | undefined | void> = new vscode.EventEmitter<CodeSmellItem | undefined | void>();
-//     readonly onDidChangeTreeData: vscode.Event<CodeSmellItem | undefined | void> = this._onDidChangeTreeData.event;
+class CodeSmellsProvider implements vscode.TreeDataProvider<CodeSmellItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<CodeSmellItem | undefined | void> = new vscode.EventEmitter<CodeSmellItem | undefined | void>();
+    readonly onDidChangeTreeData: vscode.Event<CodeSmellItem | undefined | void> = this._onDidChangeTreeData.event;
 
-//     refresh(): void {
-//         this._onDidChangeTreeData.fire();
-//     }
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
+    }
 
-//     getTreeItem(element: CodeSmellItem): vscode.TreeItem {
-//         return element;
-//     }
+    getTreeItem(element: CodeSmellItem): vscode.TreeItem {
+        return element;
+    }
 
-//     getChildren(element?: CodeSmellItem): Thenable<CodeSmellItem[]> {
-//         if (element) {
-//             return Promise.resolve([]);
-//         } else {
-//             return Promise.resolve(Array.from(detectedCodeSmells).map(smell => new CodeSmellItem(smell)));
-//         }
-//     }
-// }
+    getChildren(element?: CodeSmellItem): Thenable<CodeSmellItem[]> {
+        if (element) {
+            return Promise.resolve([]);
+        } else {
+            return Promise.resolve(Array.from(detectedCodeSmells).map(smell => new CodeSmellItem(smell)));
+        }
+    }
+}
 
-// class CodeSmellItem extends vscode.TreeItem {
-//     constructor(public readonly label: string) {
-//         super(label, vscode.TreeItemCollapsibleState.None);
-//     }
-// }
+class CodeSmellItem extends vscode.TreeItem {
+    constructor(public readonly label: string) {
+        super(label, vscode.TreeItemCollapsibleState.None);
+    }
+}
 
