@@ -189,13 +189,12 @@ function extractLineNumber(message: string): number | null {
 }
 
 // For Temporary Variable
-function extractUsedAtLines(message: string): number[] | null {
+export function extractUsedAtLines(message: string): number[] | null {
     const match = message.match(/used at \[(.*?)\]/);
     if (match && match[1]) {
         // Split the matched numbers by commas and convert them to integers.
         return match[1].split(',').map(num => parseInt(num.trim(), 10));
     }
     return null; // Return null if no match is found.
-    // Field 'temp' is declared in __init__ but only used in method 'process_data'. Consider passing it as a parameter to 'process_data'. Declared at [4, 7], used at [4, 7, 8].
-    // Gets the used at array at the end lines 
+   
 }

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { CodeResponse, DetectionResponse } from '../../types/api';
+import { extractUsedAtLines } from '../line_getters';
 
 export function showProblemsTab() {
     vscode.commands.executeCommand('workbench.action.problems.focus');
@@ -159,22 +160,33 @@ Warnings: ${globalVariableobj.warnings.join(', ')}`;
 //     }
 // }
 
-//temporary field
-  if (detectionData.temporary_field?.success && detectionData.temporary_field && 'temporary_fields' in detectionData.temporary_field) {
-    const tempField =  detectionData.temporary_field.temporary_fields;
-    console.log("intempfiedl");
-    console.log("tempField",tempField);
-    if (Array.isArray(tempField)) {
-        tempField.forEach(tempFieldobj => {
-        const range = new vscode.Range(
-            new vscode.Position(0 , 0), 
-            new vscode.Position(0, 100) 
-        );
-        const message = `Temporary detected: ${tempFieldobj}`;
+ // Temporary field
+ if (detectionData.temporary_field?.success && detectionData.temporary_field && 'temporary_fields' in detectionData.temporary_field) {
+  const tempField = detectionData.temporary_field.temporary_fields;
+
+  if (Array.isArray(tempField)) {
+      tempField.forEach(tempFieldobj => {
+          let m; // Declare the variable `m`
+
+          if (extractUsedAtLines(tempFieldobj) != null) {
+              m = extractUsedAtLines(tempFieldobj);
+          } else {
+          }
+          if(m!=null){
+            
+              let range = new vscode.Range(
+                new vscode.Position(m[0] - 1, 0),
+                new vscode.Position(m[0] - 1, 100)
+            );
+         
+            const message = `Temporary detected: ${tempFieldobj}`;
             diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning));
-    }
-    );
-    }
+          }
+        
+       
+        
+      });
+  }
 }
       const uri = vscode.Uri.file(filePath);
       diagnosticCollection.set(uri, diagnostics);
