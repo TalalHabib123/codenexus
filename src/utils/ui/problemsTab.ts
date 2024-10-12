@@ -320,12 +320,10 @@ export function showCodeSmellsInProblemsTab(
 
     const uri = vscode.Uri.file(filePath);
     diagnosticCollection.set(uri, diagnostics);
-    }}}
-    
-    
-  vscode.commands.executeCommand('package-explorer.refreshCodeSmells');
-
+    }
+    vscode.commands.executeCommand('package-explorer.refreshCodeSmells');
   }
+  
 // Create a FolderStructureProvider function
 export function createFolderStructureProvider(
   workspaceRoot: string | undefined
