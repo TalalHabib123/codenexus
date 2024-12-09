@@ -52,6 +52,9 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    console.log("__________________DEPENDENCE GRAPH __________________")
+    console.log(dependencyGraph);
+    console.log("_____________________________________________________")
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
 
     // Showing detected code smells in the Problems tab
@@ -105,7 +108,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
                 }
-            } catch (error) {
+            } catch (error:any) {
                 vscode.window.showErrorMessage(`Error: ${error.message}`);
             }
         }
@@ -126,7 +129,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 // Function to send diagnostic details to the backend
 async function sendDiagnosticToBackend(diagnostic: vscode.Diagnostic, filePath: string) {
-    return "askdnskfn"
+    return "askdnskfn";
     // try {
     //     const response = await axios.post("http://your-backend-url/refactor", {
     //         filePath: filePath,
