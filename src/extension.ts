@@ -126,7 +126,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 // Function to send diagnostic details to the backend
 async function sendDiagnosticToBackend(diagnostic: vscode.Diagnostic, filePath: string) {
-    return "askdnskfn"
+    return "askdnskfn";
     // try {
     //     const response = await axios.post("http://your-backend-url/refactor", {
     //         filePath: filePath,
