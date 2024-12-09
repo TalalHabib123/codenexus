@@ -1,78 +1,81 @@
 import * as vscode from 'vscode';
 
-/**
- * Function to register diagnostic-related commands.
- */
-export function registerDiagnosticCommands(context: vscode.ExtensionContext): void {
-    // Command for 'Learn More' on a diagnostic
-    context.subscriptions.push(
-        vscode.commands.registerCommand('codenexus.learnMore', (diagnostic: vscode.Diagnostic) => {
-            if (diagnostic) {
-                showDiagnosticDetails(diagnostic);
-            } else {
-                vscode.window.showErrorMessage("No diagnostic selected.");
-            }
-        })
-    );
+export function registerCodeActionProvider(context: vscode.ExtensionContext) {
+  const codeActionProvider = vscode.languages.registerCodeActionsProvider(
+    { scheme: 'file', language: 'python' }, // Adjust language if needed
+    new LearnMoreCodeActionProvider(),
+    { providedCodeActionKinds: LearnMoreCodeActionProvider.providedCodeActionKinds }
+  );
 
-   
+  context.subscriptions.push(codeActionProvider);
 }
 
-/**
- * Function to show a detailed view of a diagnostic in a new tab.
- */
-function showDiagnosticDetails(diagnostic: vscode.Diagnostic): void {
+class LearnMoreCodeActionProvider implements vscode.CodeActionProvider {
+    static providedCodeActionKinds = [vscode.CodeActionKind.QuickFix];
+  
+    provideCodeActions(
+      document: vscode.TextDocument,
+      range: vscode.Range,
+      context: vscode.CodeActionContext
+    ): vscode.CodeAction[] {
+      const actions: vscode.CodeAction[] = [];
+  
+      for (const diagnostic of context.diagnostics) {
+        // Only target diagnostics that match the exact range
+        if (diagnostic.range.contains(range)) {
+          const action = new vscode.CodeAction(
+            `Learn More: ${diagnostic.message}`,
+            vscode.CodeActionKind.QuickFix
+          );
+  
+          // Attach a command to the action
+          action.command = {
+            command: 'extension.learnMore',
+            title: 'Learn More',
+            arguments: [diagnostic] // Pass the specific diagnostic
+          };
+  
+          action.diagnostics = [diagnostic]; // Associate the action with the diagnostic
+          actions.push(action);
+        }
+      }
+  
+      return actions;
+    }
+  }
+  
+vscode.commands.registerCommand('extension.learnMore', async (diagnostic: vscode.Diagnostic) => {
     const panel = vscode.window.createWebviewPanel(
-        'diagnosticDetails',
-        'Diagnostic Details',
-        vscode.ViewColumn.One,
-        {}
+      'problemDetails',
+      'Problem Details',
+      vscode.ViewColumn.One,
+      {}
     );
-
-    // HTML content for the diagnostic details tab
-    panel.webview.html = getDiagnosticDetailsHtml(diagnostic);
-}
-
-/**
- * Generate the HTML content for the diagnostic details view.
- */
-function getDiagnosticDetailsHtml(diagnostic: vscode.Diagnostic): string {
-    const severity = vscode.DiagnosticSeverity[diagnostic.severity];
-    const message = diagnostic.message;
-    const range = `Line ${diagnostic.range.start.line + 1}, Column ${diagnostic.range.start.character + 1}`;
-
+  
+    panel.webview.html = getWebviewContent(diagnostic);
+  });
+  
+  function getWebviewContent(diagnostic: vscode.Diagnostic) {
     return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Diagnostic Details</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                h1 { color: #007acc; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f4f4f4; }
-            </style>
-        </head>
-        <body>
-            <h1>Diagnostic Details</h1>
-            <table>
-                <tr>
-                    <th>Severity</th>
-                    <td>${severity}</td>
-                </tr>
-                <tr>
-                    <th>Message</th>
-                    <td>${message}</td>
-                </tr>
-                <tr>
-                    <th>Range</th>
-                    <td>${range}</td>
-                </tr>
-            </table>
-        </body>
-        </html>
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Problem Details</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 10px; }
+          h2 { color: #007ACC; }
+          .severity { font-weight: bold; color: red; }
+        </style>
+      </head>
+      <body>
+        <h2>Problem Details</h2>
+        <p><strong>Message:</strong> ${diagnostic.message}</p>
+        <p><strong>Severity:</strong> ${vscode.DiagnosticSeverity[diagnostic.severity]}</p>
+        <p><strong>Range:</strong> ${JSON.stringify(diagnostic.range)}</p>
+      </body>
+      </html>
     `;
-}
+  }
+  

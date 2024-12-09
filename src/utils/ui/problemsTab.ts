@@ -14,6 +14,8 @@ export function showCodeSmellsInProblemsTab(
   diagnosticCollection: vscode.DiagnosticCollection
 ) {
   diagnosticCollection.clear();
+
+  
   //long parameter
   for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
     const diagnostics: vscode.Diagnostic[] = [];
@@ -33,13 +35,22 @@ export function showCodeSmellsInProblemsTab(
               new vscode.Position(longparameterobj.line_number - 1, 100)
             );
             const message = `Long parameter list detected: ${longparameterobj.function_name} with ${longparameterobj.long_parameter_count} parameters`;
-            diagnostics.push(
-              new vscode.Diagnostic(
-                range,
-                message,
-                vscode.DiagnosticSeverity.Warning
-              )
+            const newDiagnostic = new vscode.Diagnostic(
+              range,
+              message,
+              vscode.DiagnosticSeverity.Warning
             );
+
+            // Check for duplicate diagnostics
+            const existingDiagnostic = diagnostics.find(
+              (diag) =>
+                diag.range.isEqual(newDiagnostic.range) &&
+                diag.message === newDiagnostic.message
+            );
+
+            if (!existingDiagnostic) {
+              diagnostics.push(newDiagnostic);
+            }
           }
         });
       }
@@ -59,13 +70,22 @@ export function showCodeSmellsInProblemsTab(
             new vscode.Position(magicNumberobj.line_number - 1, 100)
           );
           const message = `Magic number detected: ${magicNumberobj.magic_number}`;
-          diagnostics.push(
-            new vscode.Diagnostic(
-              range,
-              message,
-              vscode.DiagnosticSeverity.Warning
-            )
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            message,
+            vscode.DiagnosticSeverity.Warning
           );
+
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
+
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
         });
       }
     }
@@ -76,24 +96,35 @@ export function showCodeSmellsInProblemsTab(
       "inconsistent_naming" in detectionData.naming_convention.data
     ) {
       detectedCodeSmells.add("Inconsistent naming convention");
-      const namingConven =
-        detectionData.naming_convention.data.inconsistent_naming;
-      if (namingConven) {
-        namingConven.forEach((namingConvenobj) => {
-          const range = new vscode.Range(
-            new vscode.Position(0, 0),
-            new vscode.Position(0, 100)
-          );
-          const message = `Inconsistent Naming Convention ${namingConvenobj.type} detected with ${namingConvenobj.type_count} instances.`;
-          diagnostics.push(
-            new vscode.Diagnostic(
-              range,
-              message,
-              vscode.DiagnosticSeverity.Warning
-            )
-          );
-        });
-      }
+
+const namingConven = detectionData.naming_convention.data.inconsistent_naming;
+
+if (namingConven) {
+  // Filter out naming types with 0 instances
+  const activeNamingTypes = namingConven.filter(
+    (namingConvenobj) => namingConvenobj.type_count > 0
+  );
+
+  if (activeNamingTypes.length > 1) {
+    // Case 2: Two or more types have more than 0 instances
+    const range = new vscode.Range(
+      new vscode.Position(0, 0), // Adjust the range as needed
+      new vscode.Position(0, 100)
+    );
+    const message = `Inconsistent naming convention detected in the code.`;
+    diagnostics.push(
+      new vscode.Diagnostic(
+        range,
+        message,
+        vscode.DiagnosticSeverity.Warning
+      )
+    );
+  } else if (activeNamingTypes.length === 1) {
+    // Case 1: Only one naming type with > 0 instances, do not push anything
+    // No action needed
+  }
+}
+
     }
 
     //Duplicated code
@@ -112,13 +143,22 @@ export function showCodeSmellsInProblemsTab(
               new vscode.Position(obj.start_line - 1, 100)
             );
             const message = `Duplicated code on line ${obj.start_line} till line ${obj.end_line}`;
-            diagnostics.push(
-              new vscode.Diagnostic(
-                range,
-                message,
-                vscode.DiagnosticSeverity.Warning
-              )
+            const newDiagnostic = new vscode.Diagnostic(
+              range,
+              message,
+              vscode.DiagnosticSeverity.Warning
             );
+
+            // Check for duplicate diagnostics
+            const existingDiagnostic = diagnostics.find(
+              (diag) =>
+                diag.range.isEqual(newDiagnostic.range) &&
+                diag.message === newDiagnostic.message
+            );
+
+            if (!existingDiagnostic) {
+              diagnostics.push(newDiagnostic);
+            }
           });
         });
       }
@@ -167,13 +207,22 @@ export function showCodeSmellsInProblemsTab(
             new vscode.Position(unusedVarobj.line_number - 1, 100)
           );
           const message = `Unused variable detected: ${unusedVarobj.variable_name}`;
-          diagnostics.push(
-            new vscode.Diagnostic(
-              range,
-              message,
-              vscode.DiagnosticSeverity.Warning
-            )
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            message,
+            vscode.DiagnosticSeverity.Warning
           );
+
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
+
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
         });
       }
     }
@@ -193,13 +242,22 @@ export function showCodeSmellsInProblemsTab(
           );
 
           const message = `Unreachable code detected: ${unreachableCode}`;
-          diagnostics.push(
-            new vscode.Diagnostic(
-              range,
-              message,
-              vscode.DiagnosticSeverity.Warning
-            )
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            message,
+            vscode.DiagnosticSeverity.Warning
           );
+
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
+
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
         });
       }
     }
@@ -220,14 +278,22 @@ export function showCodeSmellsInProblemsTab(
             new vscode.Position(0, 0),
             new vscode.Position(0, 0)
           );
-
-          diagnostics.push(
-            new vscode.Diagnostic(
-              range,
-              `${classDetail.class_name} contains dead code`,
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            `${classDetail.class_name} contains dead code`,
               vscode.DiagnosticSeverity.Warning
-            )
           );
+
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
+
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
         });
         if (Array.isArray(funcNames) && funcNames.length > 0) {
           funcNames.forEach((funcName) => {
@@ -235,14 +301,22 @@ export function showCodeSmellsInProblemsTab(
               new vscode.Position(0, 0),
               new vscode.Position(0, 0)
             );
-            console.log(funcName);
-            diagnostics.push(
-              new vscode.Diagnostic(
-                range,
-                `${funcName} was defined but never used`,
-                vscode.DiagnosticSeverity.Warning
-              )
+            const newDiagnostic = new vscode.Diagnostic(
+              range,
+              `${funcName} was defined but never used`,
+              vscode.DiagnosticSeverity.Warning
             );
+
+            // Check for duplicate diagnostics
+            const existingDiagnostic = diagnostics.find(
+              (diag) =>
+                diag.range.isEqual(newDiagnostic.range) &&
+                diag.message === newDiagnostic.message
+            );
+
+            if (!existingDiagnostic) {
+              diagnostics.push(newDiagnostic);
+            }
           });
         }
         if (Array.isArray(globalVariables) && globalVariables.length > 0) {
@@ -251,13 +325,23 @@ export function showCodeSmellsInProblemsTab(
               new vscode.Position(0, 0),
               new vscode.Position(0, 0)
             );
-            diagnostics.push(
-              new vscode.Diagnostic(
-                range,
-                `${globalVariable} was defined but never used`,
-                vscode.DiagnosticSeverity.Warning
-              )
+            const newDiagnostic = new vscode.Diagnostic(
+              range,
+              `${globalVariable} was defined but never used`,
+              vscode.DiagnosticSeverity.Warning
             );
+
+            // Check for duplicate diagnostics
+            const existingDiagnostic = diagnostics.find(
+              (diag) =>
+                diag.range.isEqual(newDiagnostic.range) &&
+                diag.message === newDiagnostic.message
+            );
+
+            if (!existingDiagnostic) {
+              diagnostics.push(newDiagnostic);
+            }
+          
           });
         }
       }
@@ -286,13 +370,22 @@ export function showCodeSmellsInProblemsTab(
             );
 
             const message = `Temporary detected: ${tempFieldobj}`;
-            diagnostics.push(
-              new vscode.Diagnostic(
-                range,
-                message,
-                vscode.DiagnosticSeverity.Warning
-              )
+            const newDiagnostic = new vscode.Diagnostic(
+              range,
+              message,
+              vscode.DiagnosticSeverity.Warning
             );
+
+            // Check for duplicate diagnostics
+            const existingDiagnostic = diagnostics.find(
+              (diag) =>
+                diag.range.isEqual(newDiagnostic.range) &&
+                diag.message === newDiagnostic.message
+            );
+
+            if (!existingDiagnostic) {
+              diagnostics.push(newDiagnostic);
+            }
           }
         });
       }
@@ -306,15 +399,28 @@ export function showCodeSmellsInProblemsTab(
       const tempField = detectionData.overly_complex_condition.conditionals;
       detectedCodeSmells.add("Overly complex conditions");
       if (Array.isArray(tempField) && tempField.length > 0) {
-          let message = `Overly complex conditions detected. `;
-          diagnostics.push({
+          const range = new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
+          );
+          const message = `Overly complex conditions detected.`;
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
             message,
-            range: new vscode.Range(
-              new vscode.Position(0, 0),
-              new vscode.Position(0, 0)
-            ),
-            severity: vscode.DiagnosticSeverity.Warning,
-          });
+            vscode.DiagnosticSeverity.Warning
+          );
+
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
+
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
+          
         };
       }
 

@@ -10,8 +10,9 @@ import WebSocket from 'ws';
 import { createFolderStructureProvider } from './utils/ui/problemsTab';
 import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
 import { detectedCodeSmells} from './utils/ui/problemsTab';
-import { registerDiagnosticCommands } from './utils/ui/DiagnosticAction';
+import { registerCodeActionProvider} from './utils/ui/DiagnosticAction';
 import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvider';
+
 
 let ws: WebSocket | null = null;
 const fileData: { [key: string]: CodeResponse } = {};
@@ -64,9 +65,10 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('package-explorer.refreshCodeSmells', () => codeSmellsProvider.refresh())
     );
   
-    registerDiagnosticCommands(context);
+
       
-     
+      // Register the Code Action Provider
+    registerCodeActionProvider(context);
       const runAnalysis = vscode.commands.registerCommand(
         'codenexus.runAnalysis',
         () => {
@@ -105,7 +107,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
                 }
-            } catch (error) {
+            } catch (error:any) {
                 vscode.window.showErrorMessage(`Error: ${error.message}`);
             }
         }
@@ -165,6 +167,8 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         token: vscode.CancellationToken
     ): vscode.CodeAction[] | undefined {
         return context.diagnostics.map((diagnostic) => {
+            console.log("Diagnostics added:", diagnostic);
+
             const action = new vscode.CodeAction("Fix this using codeNexus", vscode.CodeActionKind.QuickFix);
             action.command = {
                 command: "extension.refactorProblem",
@@ -176,6 +180,8 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
             return action;
         });
     }
+   
+
 }
 
 
