@@ -9,8 +9,8 @@ import { fileWatcherEventHandler } from './utils/workspace-update/update';
 import WebSocket from 'ws';
 import { createFolderStructureProvider } from './utils/ui/problemsTab';
 import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
-import { detectedCodeSmells} from './utils/ui/problemsTab';
-import { registerCodeActionProvider} from './utils/ui/DiagnosticAction';
+import { detectedCodeSmells } from './utils/ui/problemsTab';
+import { registerCodeActionProvider } from './utils/ui/DiagnosticAction';
 import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvider';
 
 import { establishWebSocketConnection } from './sockets/websockets';
@@ -24,7 +24,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
-   
+
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
     context.subscriptions.push(diagnosticCollection);
 
@@ -47,7 +47,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const folderStructureProvider = createFolderStructureProvider(workspaceRoot);
     vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
 
-   
+
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
         sendFileToServer(filePath, content, fileData)
     );
@@ -65,35 +65,35 @@ export async function activate(context: vscode.ExtensionContext) {
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
 
-    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders,diagnosticCollection);
+    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection);
     const codeSmellsProvider = new CodeSmellsProvider();
     vscode.window.registerTreeDataProvider('package-outline', codeSmellsProvider);
     context.subscriptions.push(
         vscode.commands.registerCommand('package-explorer.refreshCodeSmells', () => codeSmellsProvider.refresh())
     );
-  
 
-      
-      // Register the Code Action Provider
+
+
+    // Register the Code Action Provider
     registerCodeActionProvider(context);
-      const runAnalysis = vscode.commands.registerCommand(
+    const runAnalysis = vscode.commands.registerCommand(
         'codenexus.runAnalysis',
         () => {
-          vscode.window.showInformationMessage('Codenexus analysis started!');
-          
+            vscode.window.showInformationMessage('Codenexus analysis started!');
+
         }
-      );
-    
-      context.subscriptions.push(runAnalysis);
-      const manualCodeProvider = new ManualCodeProvider();
-      vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
-  
-      context.subscriptions.push(
-          vscode.commands.registerCommand('manualCodeView.toggleTick', (item: ManualCodeItem) => {
-              manualCodeProvider.toggleCodeSmell(item);
-          })
-      );  
-      const refactorCommand = vscode.commands.registerCommand(
+    );
+
+    context.subscriptions.push(runAnalysis);
+    const manualCodeProvider = new ManualCodeProvider();
+    vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('manualCodeView.toggleTick', (item: ManualCodeItem) => {
+            manualCodeProvider.toggleCodeSmell(item);
+        })
+    );
+    const refactorCommand = vscode.commands.registerCommand(
         "extension.refactorProblem",
         async (diagnostic: vscode.Diagnostic) => {
             const editor = vscode.window.activeTextEditor;
@@ -191,12 +191,12 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
             return action;
         });
     }
-   
+
 
 }
 
 
-export function deactivate() { 
+export function deactivate() {
     if (ws) {
         ws.close();
         ws = null;
