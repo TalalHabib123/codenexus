@@ -12,6 +12,7 @@ import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
 import { detectedCodeSmells} from './utils/ui/problemsTab';
 import { registerDiagnosticCommands } from './utils/ui/DiagnosticAction';
 import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvider';
+import { establishWebSocketConnection } from './sockets/websockets';
 
 let ws: WebSocket | null = null;
 const fileData: { [key: string]: CodeResponse } = {};
@@ -53,6 +54,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    // Test Connection
+    // console.log("Checking Websocket connection");
+    // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
 
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
@@ -106,7 +110,11 @@ export async function activate(context: vscode.ExtensionContext) {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
                 }
             } catch (error) {
-                vscode.window.showErrorMessage(`Error: ${error.message}`);
+                if (error instanceof Error) {
+                    vscode.window.showErrorMessage(`Error: ${error.message}`);
+                } else {
+                    vscode.window.showErrorMessage('An unknown error occurred.');
+                }
             }
         }
     );
@@ -186,47 +194,7 @@ export function deactivate() {
     }
 }
 
-function establishWebSocketConnection() {
-    ws = new WebSocket('ws://127.0.0.1:8000/websockets/');
-    ws.on('open', () => {
-        vscode.window.showInformationMessage('WebSocket connected to API Gateway.');
-        testWebSocketConnection();
-    });
 
-    ws.on('message', (data: string) => {
-        const message = JSON.parse(data);
-        console.log('Received message:', message);
-        if (message.status === 'task_completed') {
-            vscode.window.showInformationMessage(`Task completed: ${message.processed_data}`);
-        }
-    });
-
-    ws.on('error', (err) => {
-        vscode.window.showErrorMessage(`WebSocket error: ${err.message}`);
-    });
-
-    ws.on('close', () => {
-        vscode.window.showWarningMessage('WebSocket connection closed. Reconnecting...');
-        setTimeout(() => {
-            establishWebSocketConnection();
-        }, 5000);
-    });
-}
-
-function testWebSocketConnection() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-        vscode.window.showErrorMessage('WebSocket connection is not established.');
-        return;
-    }
-
-    const taskData = 'Sample code to analyze...';
-    const taskType = 'detect_smells';
-
-    ws.send(JSON.stringify({
-        task: taskType,
-        data: taskData
-    }));
-}
 
 class CodeSmellsProvider implements vscode.TreeDataProvider<CodeSmellItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<CodeSmellItem | undefined | void> = new vscode.EventEmitter<CodeSmellItem | undefined | void>();
