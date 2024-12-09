@@ -84,7 +84,7 @@ export function showCodeSmellsInProblemsTab(
             new vscode.Position(0, 0),
             new vscode.Position(0, 100)
           );
-          const message = `Inconsistent Naming Convention ${namingConvenobj.type} detected with ${namingConvenobj.total_count} instances.`;
+          const message = `Inconsistent Naming Convention ${namingConvenobj.type} detected with ${namingConvenobj.type_count} instances.`;
           diagnostics.push(
             new vscode.Diagnostic(
               range,

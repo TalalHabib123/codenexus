@@ -10,6 +10,8 @@ import WebSocket from 'ws';
 import { createFolderStructureProvider } from './utils/ui/problemsTab';
 import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
 import { detectedCodeSmells} from './utils/ui/problemsTab';
+import { registerDiagnosticCommands } from './utils/ui/DiagnosticAction';
+import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvider';
 
 let ws: WebSocket | null = null;
 const fileData: { [key: string]: CodeResponse } = {};
@@ -20,6 +22,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
+   
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
     context.subscriptions.push(diagnosticCollection);
 
@@ -60,21 +63,121 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('package-explorer.refreshCodeSmells', () => codeSmellsProvider.refresh())
     );
+  
+    registerDiagnosticCommands(context);
+      
+     
+      const runAnalysis = vscode.commands.registerCommand(
+        'codenexus.runAnalysis',
+        () => {
+          vscode.window.showInformationMessage('Codenexus analysis started!');
+          
+        }
+      );
+    
+      context.subscriptions.push(runAnalysis);
+      const manualCodeProvider = new ManualCodeProvider();
+      vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
+  
+      context.subscriptions.push(
+          vscode.commands.registerCommand('manualCodeView.toggleTick', (item: ManualCodeItem) => {
+              manualCodeProvider.toggleCodeSmell(item);
+          })
+      );  
+      const refactorCommand = vscode.commands.registerCommand(
+        "extension.refactorProblem",
+        async (diagnostic: vscode.Diagnostic) => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage("No active editor found!");
+                return;
+            }
+
+            const filePath = editor.document.uri.fsPath;
+            try {
+                // Send diagnostic to the backend
+                const refactoredCode = await sendDiagnosticToBackend(diagnostic, filePath);
+
+                if (refactoredCode) {
+                    // Apply the refactored code
+                    await applyRefactoredCode(editor, diagnostic, refactoredCode);
+                    vscode.window.showInformationMessage("Code refactored successfully!");
+                } else {
+                    vscode.window.showErrorMessage("Failed to get refactored code.");
+                }
+            } catch (error) {
+                vscode.window.showErrorMessage(`Error: ${error.message}`);
+            }
+        }
+    );
+
+    context.subscriptions.push(refactorCommand);
+
+    // Add a CodeActionProvider for diagnostics
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            { scheme: "file", language: "python" },
+            new DiagnosticRefactorProvider(),
+            { providedCodeActionKinds: DiagnosticRefactorProvider.providedCodeActionKinds }
+        )
+    );
 }
 
-function getWebviewContent(fileData: { [key: string]: CodeResponse }): string {
-    let content = '<html><body>';
-    for (const [filePath, data] of Object.entries(fileData)) {
-        content += `<h2>${filePath}</h2>`;
-        if (data.success) {
-            content += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-        } else {
-            content += `<pre style="color:red;">Error: ${data.error}</pre>`;
-        }
-    }
-    content += '</body></html>';
-    return content;
+
+// Function to send diagnostic details to the backend
+async function sendDiagnosticToBackend(diagnostic: vscode.Diagnostic, filePath: string) {
+    return "askdnskfn"
+    // try {
+    //     const response = await axios.post("http://your-backend-url/refactor", {
+    //         filePath: filePath,
+    //         range: {
+    //             startLine: diagnostic.range.start.line,
+    //             startCharacter: diagnostic.range.start.character,
+    //             endLine: diagnostic.range.end.line,
+    //             endCharacter: diagnostic.range.end.character,
+    //         },
+    //         message: diagnostic.message,
+    //     });
+
+    //     return response.data.refactoredCode; // Assuming the backend sends this key
+    // } catch (error) {
+    //     console.error("Error sending diagnostic to backend:", error);
+    //     throw error;
+    // }    
 }
+
+
+// Function to replace problematic code with refactored code
+async function applyRefactoredCode(editor: vscode.TextEditor, diagnostic: vscode.Diagnostic, refactoredCode: string) {
+    const edit = new vscode.WorkspaceEdit();
+    edit.replace(editor.document.uri, diagnostic.range, refactoredCode);
+    await vscode.workspace.applyEdit(edit);
+}
+
+// A CodeActionProvider to attach icons to diagnostics
+class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
+    public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix];
+
+    provideCodeActions(
+        document: vscode.TextDocument,
+        range: vscode.Range,
+        context: vscode.CodeActionContext,
+        token: vscode.CancellationToken
+    ): vscode.CodeAction[] | undefined {
+        return context.diagnostics.map((diagnostic) => {
+            const action = new vscode.CodeAction("Fix this using codeNexus", vscode.CodeActionKind.QuickFix);
+            action.command = {
+                command: "extension.refactorProblem",
+                title: "Fix this using codeNexus",
+                arguments: [diagnostic],
+            };
+            action.diagnostics = [diagnostic];
+            action.isPreferred = true;
+            return action;
+        });
+    }
+}
+
 
 export function deactivate() { 
     if (ws) {

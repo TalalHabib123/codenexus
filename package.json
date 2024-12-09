@@ -10,7 +10,8 @@
     "Other"
   ],
   "activationEvents": [
-    "*"
+    "onCommand:extension.learnMore",
+    "onCommand:extension.refactorProblem"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -18,7 +19,7 @@
       "activitybar": [
         {
           "id": "package-explorer",
-          "title": "Package Explorer",
+          "title": "CodeNexus",
           "icon": "air.png"
         }
       ]
@@ -32,6 +33,10 @@
         {
           "id": "myFolderStructureView",
           "name": "Folder Structure"
+        },
+        {
+          "id": "manualCodeView",
+          "name": "Manual Code Smells"
         }
       ]
     },
@@ -47,6 +52,22 @@
       {
         "command": "package-explorer.refreshCodeSmells",
         "title": "Refresh code smell"
+      },
+      {
+        "command": "codenexus.learnMore",
+        "title": "Learn More"
+      },
+      {
+        "command": "codenexus.runAnalysis",
+        "title": "Codenexus: Run Analysis"
+      },
+      {
+        "command": "manualCodeView.toggleTick",
+        "title": "Toggle Tick/Cross"
+      },
+      {
+        "command": "extension.refactorProblem",
+        "title": "Refactor Problem"
       }
     ],
     "configuration": {
@@ -56,6 +77,26 @@
           "default": false
         }
       }
+    },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "codenexus.learnMore",
+          "when": "view=='problemFocusView'",
+          "group": "inline"
+        },
+        {
+          "command": "manualCodeView.toggleTick",
+          "when": "viewItem == 'manualCodeItem'",
+          "group": "inline"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "codenexus.runAnalysis",
+          "group": "navigation"
+        }
+      ]
     }
   },
   "scripts": {
