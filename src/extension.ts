@@ -53,6 +53,9 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    console.log("__________________DEPENDENCE GRAPH __________________")
+    console.log(dependencyGraph);
+    console.log("_____________________________________________________")
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
 
     // Showing detected code smells in the Problems tab
