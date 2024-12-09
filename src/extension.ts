@@ -10,8 +10,9 @@ import WebSocket from 'ws';
 import { createFolderStructureProvider } from './utils/ui/problemsTab';
 import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
 import { detectedCodeSmells} from './utils/ui/problemsTab';
-import { registerDiagnosticCommands } from './utils/ui/DiagnosticAction';
+import { registerCodeActionProvider} from './utils/ui/DiagnosticAction';
 import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvider';
+
 import { establishWebSocketConnection } from './sockets/websockets';
 
 let ws: WebSocket | null = null;
@@ -53,6 +54,9 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    console.log("__________________DEPENDENCE GRAPH __________________")
+    console.log(dependencyGraph);
+    console.log("_____________________________________________________")
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
     // Test Connection
     // console.log("Checking Websocket connection");
@@ -68,9 +72,10 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('package-explorer.refreshCodeSmells', () => codeSmellsProvider.refresh())
     );
   
-    registerDiagnosticCommands(context);
+
       
-     
+      // Register the Code Action Provider
+    registerCodeActionProvider(context);
       const runAnalysis = vscode.commands.registerCommand(
         'codenexus.runAnalysis',
         () => {
@@ -173,6 +178,8 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         token: vscode.CancellationToken
     ): vscode.CodeAction[] | undefined {
         return context.diagnostics.map((diagnostic) => {
+            console.log("Diagnostics added:", diagnostic);
+
             const action = new vscode.CodeAction("Fix this using codeNexus", vscode.CodeActionKind.QuickFix);
             action.command = {
                 command: "extension.refactorProblem",
@@ -184,6 +191,8 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
             return action;
         });
     }
+   
+
 }
 
 

@@ -83,8 +83,7 @@
       "view/item/context": [
         {
           "command": "extension.learnMore",
-          "when": "editorTextFocus",
-          "group": "navigation"
+          "when": "editorTextFocus && diagnosticFocus"
         },
         {
           "command": "manualCodeView.toggleTick",
