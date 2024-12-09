@@ -54,10 +54,6 @@
         "title": "Refresh code smell"
       },
       {
-        "command": "codenexus.learnMore",
-        "title": "Learn More"
-      },
-      {
         "command": "codenexus.runAnalysis",
         "title": "Codenexus: Run Analysis"
       },
@@ -68,6 +64,10 @@
       {
         "command": "extension.refactorProblem",
         "title": "Refactor Problem"
+      },
+      {
+        "command": "extension.learnMore",
+        "title": "Learn More"
       }
     ],
     "configuration": {
@@ -81,9 +81,9 @@
     "menus": {
       "view/item/context": [
         {
-          "command": "codenexus.learnMore",
-          "when": "view=='problemFocusView'",
-          "group": "inline"
+          "command": "extension.learnMore",
+          "when": "editorTextFocus",
+          "group": "navigation"
         },
         {
           "command": "manualCodeView.toggleTick",
