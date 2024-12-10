@@ -8,13 +8,13 @@ export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeIte
 
     constructor() {
         this.items = [
-            new ManualCodeItem('Code Smell 1', false),
-            new ManualCodeItem('Code Smell 2', false),
-            new ManualCodeItem('Code Smell 3', false),
-            new ManualCodeItem('Code Smell 4', false),
-            new ManualCodeItem('Code Smell 5', false),
-            new ManualCodeItem('Code Smell 6', false),
-            new ManualCodeItem('Code Smell 7', false),
+            new ManualCodeItem('long_function', false),
+            new ManualCodeItem('god_object', false),
+            new ManualCodeItem('feature_envy', false),
+            new ManualCodeItem('nappropriate_intimacy', false),
+            new ManualCodeItem('middle_man', false),
+            new ManualCodeItem('switch_statement_abuser', false),
+            new ManualCodeItem('excessive_flags', false),
         ];
     }
 
@@ -45,6 +45,7 @@ export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeIte
     }
 
     private triggerCodeSmellDetection(codeSmell: string): void {
+        
         const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
         const workspaceFolders = vscode.workspace.workspaceFolders;
 

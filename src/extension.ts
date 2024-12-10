@@ -59,17 +59,16 @@ export async function activate(context: vscode.ExtensionContext) {
         await Promise.all(fileSendPromises);
     
         const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-        console.log("__________________DEPENDENCE GRAPH __________________");
-        console.log(dependencyGraph);
-        console.log("_____________________________________________________");
         // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
-
         // Save all the data 
         context.workspaceState.update('processedFiles', allFiles);
         context.workspaceState.update('fileData', fileData);
         context.workspaceState.update('FileDetectionData', FileDetectionData);
         context.workspaceState.update('folderStructureData', folderStructureData);
+
+
+             
 
     }
 
