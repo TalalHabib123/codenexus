@@ -12,7 +12,7 @@ import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
 import { detectedCodeSmells} from './utils/ui/problemsTab';
 import { registerCodeActionProvider} from './utils/ui/DiagnosticAction';
 import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvider';
-
+import { refactor } from './codeSmells/refactor';
 
 let ws: WebSocket | null = null;
 const fileData: { [key: string]: CodeResponse } = {};
@@ -53,9 +53,6 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all(fileSendPromises);
 
     const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    console.log("__________________DEPENDENCE GRAPH __________________")
-    console.log(dependencyGraph);
-    console.log("_____________________________________________________")
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
 
     // Showing detected code smells in the Problems tab
@@ -101,7 +98,7 @@ export async function activate(context: vscode.ExtensionContext) {
             const filePath = editor.document.uri.fsPath;
             try {
                 // Send diagnostic to the backend
-                const refactoredCode = await sendDiagnosticToBackend(diagnostic, filePath);
+                const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData);
 
                 if (refactoredCode) {
                     // Apply the refactored code
