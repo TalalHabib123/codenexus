@@ -159,6 +159,35 @@ interface SubDetectionResponse {
             DuplicateCodeResponse; 
 }
 
+
+
+interface UserTriggeredDetectionResponse {
+    correlation_id: string;
+    processed_data?: {
+        [key: string]: Array<{
+            Detected?: string;
+            Issue?: string;
+            LineNumber?: number;
+        }>;
+    };
+    task_status: string;
+    task_type?: string;
+    task_job?: string;
+    error?: string;
+}
+
+
+interface UserTriggeredDetection {
+    data: any[];        
+    time: Date;     
+    analysis_type: string; 
+    job_id: string;   
+    outdated: boolean;  
+    success: boolean;      
+    error: string;         
+}
+
+
 interface DetectionResponse {
     magic_numbers?: SubDetectionResponse;
     duplicated_code?: SubDetectionResponse;
@@ -170,6 +199,7 @@ interface DetectionResponse {
     temporary_field?: SubDetectionResponse;
     overly_complex_condition?: SubDetectionResponse;
     global_conflict?: SubDetectionResponse;
+    user_triggered_detection?: Array<UserTriggeredDetection>;
     success: boolean;
     error?: string;  
 }
@@ -211,6 +241,7 @@ export { CodeResponse,
     UnusedVariablesResponse,
     InconsistentNamingResponse,
     DuplicateCodeResponse,
-
+    UserTriggeredDetectionResponse,
+    UserTriggeredDetection,
     VariableConflictAnalysis
 };
