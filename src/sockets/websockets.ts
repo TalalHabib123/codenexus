@@ -63,6 +63,13 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
                                 if (!FileDetectionData[file].user_triggered_detection) {
                                     FileDetectionData[file].user_triggered_detection = [];
                                 }
+                                else{
+                                    for (let i = 0; i < FileDetectionData[file].user_triggered_detection.length; i++) {
+                                        if (FileDetectionData[file].user_triggered_detection[i].job_id === taskJob) {
+                                            FileDetectionData[file].user_triggered_detection[i].outdated = true;
+                                        }
+                                    }
+                                }
                                 
                                 FileDetectionData[file].user_triggered_detection.push(newTriggerData);
                                 
