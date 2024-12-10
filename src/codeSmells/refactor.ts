@@ -18,23 +18,6 @@ export const refactor = async (
             const codeSmellData = FileDetectionData[filePath];
             console.log(codeSmellData.naming_convention);
         }
-        // // Log weights of all dependencies
-        
-        // console.log("All dependencies processed:", depMap);
-        // const uri = vscode.Uri.file(filePath); // Create a Uri from the file path
-        // const fileData = await vscode.workspace.fs.readFile(uri);
-        // console.log("THIS IS THE DEPENDENCY MAP" , depMap);
-        // dependencies.forEach((dependency) => {
-        //     if (dependency.weight) {
-        //         if (dependency.weight.every( weight => weight.source === "Exporting"))
-        //         console.log(`Weight for ${dependency.name}:`, dependency.weight);
-        //         dependency.weight.forEach (weight => {
-        //             console.log(weight.source);
-        //         });
-        //     }
-        // });
-
-        // Additional refactoring logic here...
     } catch (err) {
         console.error("Error during refactoring:", err);
     }
@@ -81,7 +64,6 @@ const getDependencyData = async (
     });
     
     await Promise.all(promises); // Wait for all file reads to complete
-    console.log("THIS IS THE DEPENDENCY DATA: ", dependencyData);
     return dependencyData;
 };
 const getDependencies = (

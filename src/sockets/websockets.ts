@@ -3,7 +3,14 @@ import * as vscode from 'vscode';
 import { CodeResponse, DetectionResponse, UserTriggeredDetectionResponse, UserTriggeredDetection } from '../types/api';
 import { taskDataGenerator } from './detections/generate_task_data';
 import { detectionHelper } from './detections/detection_helper';
+let statusBarItem: vscode.StatusBarItem;
 
+export function activate(context: vscode.ExtensionContext) {
+    // Initialize status bar item
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+    context.subscriptions.push(statusBarItem);
+    
+}
 function sendMessage(
     ws: WebSocket | null,
     taskData: { [key: string]: string } ,
@@ -49,7 +56,7 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
                     vscode.window.showInformationMessage(`Task completed`);
                     if (message.processed_data)
                     {
-                        if (message.task_type === 'detection') {
+                        if (message.task_type === 'detection') { //data sucessfully processed
                             for (const [file, data] of Object.entries(message.processed_data)) {
                                 const newTriggerData: UserTriggeredDetection = {
                                     data: data,
@@ -78,14 +85,14 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
                     }
                     console.log('FileDetectionData:', FileDetectionData);
                 }
-                else if (message.task_status === 'task_failed') {
+                else if (message.task_status === 'task_failed') {//loading state error
                     vscode.window.showErrorMessage(`Task failed: ${message.error}`);
                 }
-                else if (message.task_status === 'task_started') {
+                else if (message.task_status === 'task_started') {//loading state
                     vscode.window.showInformationMessage(`Task started: ${message.correlation_id}`);
                 }
                 else {
-                    vscode.window.showErrorMessage(`Task failed: ${message.task_status}`);
+                    vscode.window.showErrorMessage(`Task failed: ${message.task_status}`);//errorloading state stopped
                 }
             } catch (error) {
                 if (error instanceof Error) {
