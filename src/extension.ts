@@ -21,7 +21,7 @@ let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
 let folderStructureData: { [key: string]: FolderStructure } = {};
-
+let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
 export async function activate(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
@@ -33,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
     folderStructureData = context.workspaceState.get<{ [key: string]: FolderStructure }>('folderStructureData', {});
     dependencyGraph = context.workspaceState.get<{ [key: string]: Map<string, FileNode> }>('dependencyGraph', {});
 
-    const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
+ 
     context.subscriptions.push(diagnosticCollection);
 
     const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -65,6 +65,7 @@ export async function activate(context: vscode.ExtensionContext) {
         console.log("__________________DEPENDENCE GRAPH __________________");
         console.log(dependencyGraph);
         console.log("_____________________________________________________");
+
         establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
         // Save all the data 
@@ -75,30 +76,7 @@ export async function activate(context: vscode.ExtensionContext) {
         context.workspaceState.update('dependencyGraph', dependencyGraph);
     }
 
-    // Comment From Here
-    const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
-        sendFileToServer(filePath, content, fileData)
-    );
-    await Promise.all(fileSendPromises);
-
-    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    console.log("__________________DEPENDENCE GRAPH __________________")
-    console.log(dependencyGraph);
-    console.log("_____________________________________________________")
-    // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
-
-    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
-    // Test Connection
-
-    context.workspaceState.update('processedFiles', allFiles);
-    context.workspaceState.update('fileData', fileData);
-    context.workspaceState.update('FileDetectionData', FileDetectionData);
-    context.workspaceState.update('folderStructureData', folderStructureData);
-    // Till Here
-
-    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    context.workspaceState.update('dependencyGraph', dependencyGraph);
-
+   
     console.log("__________________DEPENDENCE GRAPH __________________");
     console.log(dependencyGraph);
     console.log("_____________________________________________________");
@@ -234,7 +212,7 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         token: vscode.CancellationToken
     ): vscode.CodeAction[] | undefined {
         return context.diagnostics.map((diagnostic) => {
-            console.log("Diagnostics added:", diagnostic);
+    
 
             const action = new vscode.CodeAction("Fix this using codeNexus", vscode.CodeActionKind.QuickFix);
             action.command = {
@@ -288,3 +266,17 @@ class CodeSmellItem extends vscode.TreeItem {
     }
 }
 
+export function triggerCodeSmellDetection(
+    codeSmell: string
+): void {
+   
+  establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell);
+    console.log("__________________FILE DETECTION DATA __________________");
+    console.log(FileDetectionData);
+    console.log("_____________________________________________________");
+
+     // Showing detected code smells in the Problems tab
+     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+    
+    vscode.window.showInformationMessage(`Problems updated for: ${codeSmell}`);
+}
