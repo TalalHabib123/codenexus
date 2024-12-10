@@ -293,6 +293,9 @@ export function triggerCodeSmellDetection(
     console.log("_____________________________________________________");
 
      // Showing detected code smells in the Problems tab
+     console.log("__________________FILE DETECTION DATA __________________");   
+     console.log(FileDetectionData);
+        console.log("_____________________________________________________");
      showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
     
     vscode.window.showInformationMessage(`Problems updated for: ${codeSmell}`);
