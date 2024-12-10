@@ -1,6 +1,86 @@
-const vscode = require('vscode');
+import * as vscode from 'vscode';
+import { WebviewPanel } from 'vscode';
 
-export function createWebviewPanel(context: any, dependencyGraph: any) {
+
+function parseDependencyGraph(dependencyGraph: any): { nodes: any[]; edges: any[] } {
+    const nodes: any[] = [];
+    const edges: any[] = [];
+
+    // Helper function to recursively process a node and its dependencies
+    function processNode(filePath: string, fileData: any) {
+        // Add the current file as a node if not already added
+        if (!nodes.find((node) => node.id === filePath)) {
+            nodes.push({ id: filePath, label: filePath });
+        }
+
+        // Process dependencies
+        if (fileData.dependencies && fileData.dependencies.size > 0) {
+            fileData.dependencies.forEach((dependency: any) => {
+                const dependencyName = dependency.name;
+
+                // Add the dependency node if it doesn't exist
+                if (!nodes.find((node) => node.id === dependencyName)) {
+                    nodes.push({ id: dependencyName, label: dependencyName });
+                }
+
+                // Add an edge for the dependency relationship
+                edges.push({
+                    from: filePath,
+                    to: dependencyName,
+                    label: 'depends_on', // Add more specific labels if needed
+                    arrows: 'to', // Indicate direction
+                });
+
+                // Recursively process the dependency node if it has its own dependencies
+                if (dependency.dependencies) {
+                    processNode(dependencyName, dependency);
+                }
+            });
+        }
+
+        // Process weights if available
+        if (fileData.weight && Array.isArray(fileData.weight)) {
+            fileData.weight.forEach((weight: any) => {
+                const weightName = weight.name;
+
+                // Add the weight node if it doesn't exist
+                if (!nodes.find((node) => node.id === weightName)) {
+                    nodes.push({ id: weightName, label: weightName });
+                }
+
+                // Add an edge for the weight relationship
+                edges.push({
+                    from: filePath,
+                    to: weightName,
+                    label: weight.type || 'uses', // Specify the type of relationship (e.g., 'variable', 'function')
+                    arrows: 'to',
+                });
+            });
+        }
+    }
+
+    // Traverse the dependency graph
+    Object.keys(dependencyGraph).forEach((filePath) => {
+        const fileData = dependencyGraph[filePath];
+        processNode(filePath, fileData);
+    });
+
+    return { nodes, edges };
+}
+
+
+export function createWebviewPanel(context: vscode.ExtensionContext, dependencyGraph: any): WebviewPanel {
+    // Convert the original dependency graph format into nodes and edges
+    const { nodes, edges } = parseDependencyGraph(dependencyGraph);
+console.log("----------------------------------");
+nodes.forEach((node, index) => {
+    console.log(`Node ${index}:`, node);
+});
+console.log("----------------------------------");
+nodes.forEach((edges, index) => {
+    console.log(`Edges ${index}:`, edges);
+});
+console.log("----------------------------------");
     // Create a Webview Panel
     const panel = vscode.window.createWebviewPanel(
         'dependencyGraph', // Internal ID
@@ -10,19 +90,18 @@ export function createWebviewPanel(context: any, dependencyGraph: any) {
             enableScripts: true, // Allow JS execution in Webview
         }
     );
-console.log('-----------------dependencyGraph-----------------');
-console.log(dependencyGraph);
-console.log('-----------------------------------------');
+
     // Set the HTML Content
     panel.webview.html = getWebviewContent();
 
-    // Send dependency graph data to the Webview
-    panel.webview.postMessage(dependencyGraph);
+    // Send the processed graph data to the WebView
+    panel.webview.postMessage({ nodes, edges });
 
     return panel;
 }
 
-export function getWebviewContent() {
+
+export function getWebviewContent(): string {
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -52,38 +131,11 @@ export function getWebviewContent() {
           const vscode = acquireVsCodeApi();
 
           window.addEventListener('message', event => {
-            const dependencyGraph = event.data;
-            renderGraph(dependencyGraph);
+            const { nodes, edges } = event.data;
+            renderGraph(nodes, edges);
           });
 
-          function renderGraph(dependencyGraph) {
-              const nodes = [];
-              const edges = [];
-
-              // Parse the dependency graph
-              Object.keys(dependencyGraph).forEach(filePath => {
-                  // Add the current file as a node
-                  nodes.push({ id: filePath, label: filePath });
-
-                  const dependencies = Array.from(dependencyGraph[filePath].dependencies);
-                  dependencies.forEach(dep => {
-                      // Add edges with labels showing the relationship
-                      edges.push({
-                          from: filePath,
-                          to: dep.name,
-                          label: dep.type, // Display type like "import", "class", etc.
-                          arrows: 'to', // Arrow direction
-                          font: { align: 'top' },
-                          color: { color: 'gray' }
-                      });
-
-                      // Add dependent nodes if they don't already exist
-                      if (!nodes.find(node => node.id === dep.name)) {
-                          nodes.push({ id: dep.name, label: dep.name });
-                      }
-                  });
-              });
-
+          function renderGraph(nodes, edges) {
               const container = document.getElementById('network');
 
               const data = {
@@ -128,8 +180,3 @@ export function getWebviewContent() {
       </html>
     `;
 }
-
-module.exports = {
-    createWebviewPanel,
-    getWebviewContent
-};

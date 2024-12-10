@@ -67,7 +67,6 @@ export async function activate(context: vscode.ExtensionContext) {
         console.log("_____________________________________________________");
         establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
-
         // Save all the data 
         context.workspaceState.update('processedFiles', allFiles);
         context.workspaceState.update('fileData', fileData);
