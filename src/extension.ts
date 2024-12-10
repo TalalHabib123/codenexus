@@ -12,6 +12,7 @@ import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
 import { detectedCodeSmells } from './utils/ui/problemsTab';
 import { registerCodeActionProvider } from './utils/ui/DiagnosticAction';
 import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvider';
+import { createWebviewPanel,getWebviewContent} from './utils/ui/webviewast'; 
 import { refactor } from './codeSmells/refactor';
 import { establishWebSocketConnection } from './sockets/websockets';
 
@@ -84,6 +85,7 @@ export async function activate(context: vscode.ExtensionContext) {
     console.log(dependencyGraph);
     console.log("_____________________________________________________")
     // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
     // Test Connection
 
@@ -124,6 +126,13 @@ export async function activate(context: vscode.ExtensionContext) {
             manualCodeProvider.toggleCodeSmell(item);
         })
     );
+      context.subscriptions.push(
+        vscode.commands.registerCommand('codenexus.showAST', async () => {
+         createWebviewPanel(context, dependencyGraph);
+
+           
+        })
+    )
     const refactorCommand = vscode.commands.registerCommand(
         "extension.refactorProblem",
         async (diagnostic: vscode.Diagnostic) => {
@@ -156,7 +165,6 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(refactorCommand);
-
     // Add a CodeActionProvider for diagnostics
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(

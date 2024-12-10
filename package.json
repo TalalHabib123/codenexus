@@ -2,7 +2,7 @@
   "publisher": "CodeNexus",
   "name": "codenexus",
   "displayName": "CodeNexus",
-  "description": "",
+  "description": "A tool for analyzing and refactoring code with visualizations.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.92.0"
@@ -13,7 +13,8 @@
   "activationEvents": [
     "*",
     "onCommand:extension.learnMore",
-    "onCommand:extension.refactorProblem"
+    "onCommand:extension.refactorProblem",
+    "onCommand:codenexus.showAST"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -70,6 +71,10 @@
       {
         "command": "extension.learnMore",
         "title": "Learn More"
+      },
+      {
+        "command": "codenexus.showAST",
+        "title": "Show AST Visualization"
       }
     ],
     "configuration": {
@@ -92,6 +97,13 @@
           "group": "inline"
         }
       ],
+      "view/title": [
+        {
+          "command": "codenexus.showAST",
+          "when": "view == package-outline",
+          "group": "navigation"
+        }
+      ],
       "editor/context": [
         {
           "command": "codenexus.runAnalysis",
@@ -109,10 +121,8 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.7",
     "@types/node": "20.x",
     "@types/vscode": "^1.92.0",
-    "@types/ws": "^8.5.12",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.11.0",
     "@vscode/test-cli": "^0.0.9",
@@ -121,8 +131,6 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "axios": "^1.7.4",
-    "codenexus": "file:",
-    "ws": "^8.18.0"
+    "codenexus": "file:"
   }
 }
