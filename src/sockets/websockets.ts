@@ -1,0 +1,108 @@
+import WebSocket from 'ws';
+import * as vscode from 'vscode';
+import { CodeResponse, DetectionResponse, UserTriggeredDetectionResponse, UserTriggeredDetection } from '../types/api';
+import { taskDataGenerator } from './detections/generate_task_data';
+import { detectionHelper } from './detections/detection_helper';
+
+function sendMessage(
+    ws: WebSocket | null,
+    taskData: { [key: string]: string } ,
+    taskType: string,
+    taskJob: string,
+) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        vscode.window.showErrorMessage('WebSocket connection is not established.');
+        return;
+    }
+
+    ws.send(JSON.stringify({
+        task: taskType,
+        data: taskData,
+        job: taskJob,
+    }));
+}
+
+function establishWebSocketConnection(ws: WebSocket | null = null, 
+    fileData: { [key: string]: CodeResponse },
+    FileDetectionData: { [key: string]: DetectionResponse } ,
+    taskType: string,
+    taskJob: string,
+) {
+    const taskData = taskDataGenerator(fileData, taskType, detectionHelper[taskJob]);
+    if (!taskData || Object.keys(taskData).length === 0) {
+        vscode.window.showErrorMessage('No data to send for Analysis.');
+        return;
+    }
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        vscode.window.showInformationMessage('Establishing WebSocket connection...');
+        ws = new WebSocket('ws://127.0.0.1:8000/websockets/');
+        ws.on('open', () => {
+            vscode.window.showInformationMessage('WebSocket connected to API Gateway.');
+            sendMessage(ws, taskData, taskType, taskJob);
+        });
+
+        ws.on('message', (data: string) => {
+            try {
+                const message: UserTriggeredDetectionResponse = JSON.parse(data);
+                console.log('Received message:', message);
+                if (message.task_status === 'success') {
+                    vscode.window.showInformationMessage(`Task completed`);
+                    if (message.processed_data)
+                    {
+                        if (message.task_type === 'detection') {
+                            for (const [file, data] of Object.entries(message.processed_data)) {
+                                const newTriggerData: UserTriggeredDetection = {
+                                    data: data,
+                                    time: new Date(),
+                                    analysis_type: taskType,
+                                    job_id: taskJob,
+                                    outdated: false,
+                                    success: true,
+                                    error: '',
+                                };
+                                if (!FileDetectionData[file].user_triggered_detection) {
+                                    FileDetectionData[file].user_triggered_detection = [];
+                                }
+                                
+                                FileDetectionData[file].user_triggered_detection.push(newTriggerData);
+                                
+                            }
+                        }
+                    }
+                    console.log('FileDetectionData:', FileDetectionData);
+                }
+                else if (message.task_status === 'task_failed') {
+                    vscode.window.showErrorMessage(`Task failed: ${message.error}`);
+                }
+                else if (message.task_status === 'task_started') {
+                    vscode.window.showInformationMessage(`Task started: ${message.correlation_id}`);
+                }
+                else {
+                    vscode.window.showErrorMessage(`Task failed: ${message.task_status}`);
+                }
+            } catch (error) {
+                if (error instanceof Error) {
+                    vscode.window.showErrorMessage(`WebSocket error: ${error.message}`);
+                    console.error(error);
+                } else {
+                    vscode.window.showErrorMessage(`WebSocket error: ${String(error)}`);
+                    console.error(error);
+                }
+            }
+        });
+
+        ws.on('error', (err) => {
+            vscode.window.showErrorMessage(`WebSocket error: ${err.message}`);
+        });
+
+        ws.on('close', () => {
+            vscode.window.showInformationMessage('WebSocket connection closed.');
+        });
+    }
+    else {
+        vscode.window.showInformationMessage('WebSocket connection is already established.');
+        return;
+    }
+}
+
+export { establishWebSocketConnection };

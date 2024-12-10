@@ -1,4 +1,5 @@
 {
+  "publisher": "CodeNexus",
   "name": "codenexus",
   "displayName": "CodeNexus",
   "description": "A tool for analyzing and refactoring code with visualizations.",
