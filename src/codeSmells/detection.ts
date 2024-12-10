@@ -10,6 +10,7 @@ import { getParameterListSmells } from "./analysis/long_parameter_list";
 import { getUnusedVarSmells } from "./analysis/unused_var_smell";
 import { getNamingConventionSmells } from "./analysis/naming_convention";
 import { getDuplicateCodeSmells } from "./analysis/duplicate_smells";
+
 export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<string, FileNode> }, 
     fileData: { [key: string]: CodeResponse },
     workspaceFolders: string[],
