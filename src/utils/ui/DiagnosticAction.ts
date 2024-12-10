@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 export function registerCodeActionProvider(context: vscode.ExtensionContext) {
   const codeActionProvider = vscode.languages.registerCodeActionsProvider(
-    { scheme: 'file', language: 'python' }, // Adjust language if needed
+    { scheme: 'file', language: 'python' },
     new LearnMoreCodeActionProvider(),
     { providedCodeActionKinds: LearnMoreCodeActionProvider.providedCodeActionKinds }
   );
@@ -21,7 +21,7 @@ class LearnMoreCodeActionProvider implements vscode.CodeActionProvider {
       const actions: vscode.CodeAction[] = [];
   
       for (const diagnostic of context.diagnostics) {
-        // Only target diagnostics that match the exact range
+      
         if (diagnostic.range.contains(range)) {
           const action = new vscode.CodeAction(
             `Learn More: ${diagnostic.message}`,
