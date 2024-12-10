@@ -21,14 +21,14 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "package-explorer",
+          "id": "codenexus-explorer",
           "title": "CodeNexus",
           "icon": "air.png"
         }
       ]
     },
     "views": {
-      "package-explorer": [
+      "codenexus-explorer": [
         {
           "id": "package-outline",
           "name": "Code Smells detected"
@@ -123,6 +123,7 @@
   "devDependencies": {
     "@types/node": "20.x",
     "@types/vscode": "^1.92.0",
+    "@types/ws": "^8.5.13",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.11.0",
     "@vscode/test-cli": "^0.0.9",
@@ -131,6 +132,8 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "codenexus": "file:"
+    "axios": "^1.7.9",
+    "codenexus": "file:",
+    "ws": "^8.18.0"
   }
 }

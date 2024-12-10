@@ -14,8 +14,9 @@ export const refactor = async (
         
         if (diagnostic.message.includes("Inconsistent naming convention"))
         {
-            console.log("------------------------------------------------------------------------");
-            console.log(await getDependencyData(dependencyGraph, filePath));
+            const dependencyData = await getDependencyData(dependencyGraph, filePath);
+            const codeSmellData = FileDetectionData[filePath];
+            console.log(codeSmellData.naming_convention);
         }
         // // Log weights of all dependencies
         
