@@ -22,7 +22,8 @@
         {
           "id": "package-explorer",
           "title": "CodeNexus",
-          "icon": "air.png"
+          "icon": "air.png",
+          "when": "true"
         }
       ]
     },

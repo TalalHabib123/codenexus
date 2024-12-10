@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { CodeResponse, DetectionResponse } from './types/api';
+import { FileNode } from './types/graph';
 import { FolderStructure } from './types/folder';
 import { sendFileToServer } from './utils/api/ast_server';
 import { traverseFolder, folderStructure } from './utils/codebase_analysis/folder_analysis';
@@ -24,10 +25,12 @@ export async function activate(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
+    let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
 
     fileData = context.workspaceState.get<{ [key: string]: CodeResponse }>('fileData', {});
     FileDetectionData = context.workspaceState.get<{ [key: string]: DetectionResponse }>('FileDetectionData', {});
     folderStructureData = context.workspaceState.get<{ [key: string]: FolderStructure }>('folderStructureData', {});
+    dependencyGraph = context.workspaceState.get<{ [key: string]: Map<string, FileNode> }>('dependencyGraph', {});
 
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
     context.subscriptions.push(diagnosticCollection);
@@ -52,17 +55,16 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
 
     if (newFiles && Object.keys(newFiles).length > 0) {
-        context.workspaceState.update('processedFiles', allFiles);
         const fileSendPromises = Object.entries(newFiles).map(([filePath, content]) =>
             sendFileToServer(filePath, content, fileData)
         );
         await Promise.all(fileSendPromises);
     
-        const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+        dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
         console.log("__________________DEPENDENCE GRAPH __________________");
         console.log(dependencyGraph);
         console.log("_____________________________________________________");
-        // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+        establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
 
         // Save all the data 
@@ -70,7 +72,7 @@ export async function activate(context: vscode.ExtensionContext) {
         context.workspaceState.update('fileData', fileData);
         context.workspaceState.update('FileDetectionData', FileDetectionData);
         context.workspaceState.update('folderStructureData', folderStructureData);
-
+        context.workspaceState.update('dependencyGraph', dependencyGraph);
     }
 
     // Comment From Here
@@ -79,7 +81,7 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     await Promise.all(fileSendPromises);
 
-    const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
     console.log("__________________DEPENDENCE GRAPH __________________")
     console.log(dependencyGraph);
     console.log("_____________________________________________________")
@@ -92,6 +94,22 @@ export async function activate(context: vscode.ExtensionContext) {
     context.workspaceState.update('FileDetectionData', FileDetectionData);
     context.workspaceState.update('folderStructureData', folderStructureData);
     // Till Here
+
+    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    context.workspaceState.update('dependencyGraph', dependencyGraph);
+
+    console.log("__________________DEPENDENCE GRAPH __________________");
+    console.log(dependencyGraph);
+    console.log("_____________________________________________________");
+    console.log("__________________FILE DATA __________________");
+    console.log(fileData);
+    console.log("_____________________________________________________");
+    console.log("__________________FILE DETECTION DATA __________________");
+    console.log(FileDetectionData);
+    console.log("_____________________________________________________");
+    console.log("__________________FOLDER STRUCTURE DATA __________________");
+    console.log(folderStructureData);
+    console.log("_____________________________________________________");
 
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
