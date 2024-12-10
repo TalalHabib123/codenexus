@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 import { WebviewPanel } from 'vscode';
 
-
 function parseDependencyGraph(dependencyGraph: any): { nodes: any[]; edges: any[] } {
     const nodes: any[] = [];
     const edges: any[] = [];
 
-    // Helper function to recursively process a node and its dependencies
+    
     function processNode(filePath: string, fileData: any) {
         // Add the current file as a node if not already added
         if (!nodes.find((node) => node.id === filePath)) {
@@ -15,8 +14,14 @@ function parseDependencyGraph(dependencyGraph: any): { nodes: any[]; edges: any[
 
         // Process dependencies
         if (fileData.dependencies && fileData.dependencies.size > 0) {
-            fileData.dependencies.forEach((dependency: any) => {
+            Array.from(fileData.dependencies).forEach((dependency: any) => {
                 const dependencyName = dependency.name;
+               console.log(dependencyName)
+                // Filter dependencies based on weight.source === "Exporting"
+                const validDependency = dependency.weight.every(
+                    (weight: any) => weight.source === "Exporting"
+                );
+                if (!validDependency) return;
 
                 // Add the dependency node if it doesn't exist
                 if (!nodes.find((node) => node.id === dependencyName)) {
@@ -68,19 +73,20 @@ function parseDependencyGraph(dependencyGraph: any): { nodes: any[]; edges: any[
     return { nodes, edges };
 }
 
-
 export function createWebviewPanel(context: vscode.ExtensionContext, dependencyGraph: any): WebviewPanel {
     // Convert the original dependency graph format into nodes and edges
     const { nodes, edges } = parseDependencyGraph(dependencyGraph);
-console.log("----------------------------------");
-nodes.forEach((node, index) => {
-    console.log(`Node ${index}:`, node);
-});
-console.log("----------------------------------");
-nodes.forEach((edges, index) => {
-    console.log(`Edges ${index}:`, edges);
-});
-console.log("----------------------------------");
+
+    console.log("----------------------------------");
+    nodes.forEach((node, index) => {
+        console.log(`Node ${index}:`, node);
+    });
+    console.log("----------------------------------");
+    edges.forEach((edge, index) => {
+        console.log(`Edge ${index}:`, edge);
+    });
+    console.log("----------------------------------");
+
     // Create a Webview Panel
     const panel = vscode.window.createWebviewPanel(
         'dependencyGraph', // Internal ID
@@ -99,7 +105,6 @@ console.log("----------------------------------");
 
     return panel;
 }
-
 
 export function getWebviewContent(): string {
     return `

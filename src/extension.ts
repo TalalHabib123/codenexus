@@ -164,7 +164,8 @@ export async function activate(context: vscode.ExtensionContext) {
             try {
                 // Send diagnostic to the backend
                 const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData);
-
+                RefreshDetection(context, folders, allFiles);
+                showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
                 if (refactoredCode) {
                     // Apply the refactored code
                     await applyRefactoredCode(editor, diagnostic, refactoredCode);
@@ -194,26 +195,19 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 
-// Function to send diagnostic details to the backend
-async function sendDiagnosticToBackend(diagnostic: vscode.Diagnostic, filePath: string) {
-    return "askdnskfn";
-    // try {
-    //     const response = await axios.post("http://your-backend-url/refactor", {
-    //         filePath: filePath,
-    //         range: {
-    //             startLine: diagnostic.range.start.line,
-    //             startCharacter: diagnostic.range.start.character,
-    //             endLine: diagnostic.range.end.line,
-    //             endCharacter: diagnostic.range.end.character,
-    //         },
-    //         message: diagnostic.message,
-    //     });
-
-    //     return response.data.refactoredCode; // Assuming the backend sends this key
-    // } catch (error) {
-    //     console.error("Error sending diagnostic to backend:", error);
-    //     throw error;
-    // }    
+async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
+    let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
+    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+        console.log("__________________DEPENDENCE GRAPH __________________");
+        console.log(dependencyGraph);
+        console.log("_____________________________________________________");
+        await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+        
+        context.workspaceState.update('processedFiles', allFiles);
+        context.workspaceState.update('fileData', fileData);
+        context.workspaceState.update('FileDetectionData', FileDetectionData);
+        context.workspaceState.update('folderStructureData', folderStructureData);
+        context.workspaceState.update('dependencyGraph', dependencyGraph);
 }
 
 
