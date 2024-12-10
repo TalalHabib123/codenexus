@@ -194,27 +194,6 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 
-// Function to send diagnostic details to the backend
-async function sendDiagnosticToBackend(diagnostic: vscode.Diagnostic, filePath: string) {
-    return "askdnskfn";
-    // try {
-    //     const response = await axios.post("http://your-backend-url/refactor", {
-    //         filePath: filePath,
-    //         range: {
-    //             startLine: diagnostic.range.start.line,
-    //             startCharacter: diagnostic.range.start.character,
-    //             endLine: diagnostic.range.end.line,
-    //             endCharacter: diagnostic.range.end.character,
-    //         },
-    //         message: diagnostic.message,
-    //     });
-
-    //     return response.data.refactoredCode; // Assuming the backend sends this key
-    // } catch (error) {
-    //     console.error("Error sending diagnostic to backend:", error);
-    //     throw error;
-    // }    
-}
 
 
 // Function to replace problematic code with refactored code
