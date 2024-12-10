@@ -1,105 +1,65 @@
 import * as vscode from 'vscode';
 import { WebviewPanel } from 'vscode';
+import * as path from 'path';
 
-
-function parseDependencyGraph(dependencyGraph: any): { nodes: any[]; edges: any[] } {
+const parseDependencyGraph = (dependencyGraph: any): { nodes: any[]; edges: any[] } => {
     const nodes: any[] = [];
     const edges: any[] = [];
+    const visitedNodes = new Set<string>();
 
-    // Helper function to recursively process a node and its dependencies
-    function processNode(filePath: string, fileData: any) {
-        // Add the current file as a node if not already added
-        if (!nodes.find((node) => node.id === filePath)) {
-            nodes.push({ id: filePath, label: filePath });
+    const visitNode = (node: any, graph: any) => {
+        if (visitedNodes.has(node.name)) {
+            return;
         }
 
-        // Process dependencies
-        if (fileData.dependencies && fileData.dependencies.size > 0) {
-            fileData.dependencies.forEach((dependency: any) => {
-                const dependencyName = dependency.name;
+        visitedNodes.add(node.name);
+        nodes.push({
+            id: node.name,
+            label: path.basename(node.name),
+        });
 
-                // Add the dependency node if it doesn't exist
-                if (!nodes.find((node) => node.id === dependencyName)) {
-                    nodes.push({ id: dependencyName, label: dependencyName });
-                }
-
-                // Add an edge for the dependency relationship
-                edges.push({
-                    from: filePath,
-                    to: dependencyName,
-                    label: 'depends_on', // Add more specific labels if needed
-                    arrows: 'to', // Indicate direction
-                });
-
-                // Recursively process the dependency node if it has its own dependencies
-                if (dependency.dependencies) {
-                    processNode(dependencyName, dependency);
+        node.dependencies.forEach((dep: any) => {
+            dep.weight.forEach((weight: any) => {
+                if (weight.source === 'Exporting') {
+                    visitNode(graph.get(dep.name), graph);
                 }
             });
-        }
-
-        // Process weights if available
-        if (fileData.weight && Array.isArray(fileData.weight)) {
-            fileData.weight.forEach((weight: any) => {
-                const weightName = weight.name;
-
-                // Add the weight node if it doesn't exist
-                if (!nodes.find((node) => node.id === weightName)) {
-                    nodes.push({ id: weightName, label: weightName });
-                }
-
-                // Add an edge for the weight relationship
-                edges.push({
-                    from: filePath,
-                    to: weightName,
-                    label: weight.type || 'uses', // Specify the type of relationship (e.g., 'variable', 'function')
-                    arrows: 'to',
-                });
+            edges.push({
+                from: node.name,
+                to: dep.name,
+                weights: dep.weight,
             });
-        }
+        });
+    };
+
+    for (let [key, value] of dependencyGraph) {
+        visitNode(value, dependencyGraph);
     }
 
-    // Traverse the dependency graph
-    Object.keys(dependencyGraph).forEach((filePath) => {
-        const fileData = dependencyGraph[filePath];
-        processNode(filePath, fileData);
-    });
-
     return { nodes, edges };
-}
-
+};
 
 export function createWebviewPanel(context: vscode.ExtensionContext, dependencyGraph: any): WebviewPanel {
-    // Convert the original dependency graph format into nodes and edges
-    const { nodes, edges } = parseDependencyGraph(dependencyGraph);
-console.log("----------------------------------");
-nodes.forEach((node, index) => {
-    console.log(`Node ${index}:`, node);
-});
-console.log("----------------------------------");
-nodes.forEach((edges, index) => {
-    console.log(`Edges ${index}:`, edges);
-});
-console.log("----------------------------------");
-    // Create a Webview Panel
+    let innerMap = Object.keys(dependencyGraph).map((key) => {
+        return dependencyGraph[key];
+    });
+    innerMap = innerMap[0];
+    const { nodes, edges } = parseDependencyGraph(innerMap);
+
     const panel = vscode.window.createWebviewPanel(
-        'dependencyGraph', // Internal ID
-        'Dependency Graph', // Title
-        vscode.ViewColumn.One, // Show in active editor
+        'dependencyGraph',
+        'Dependency Graph',
+        vscode.ViewColumn.One,
         {
-            enableScripts: true, // Allow JS execution in Webview
+            enableScripts: true,
         }
     );
 
-    // Set the HTML Content
     panel.webview.html = getWebviewContent();
-
-    // Send the processed graph data to the WebView
     panel.webview.postMessage({ nodes, edges });
 
     return panel;
 }
-
 
 export function getWebviewContent(): string {
     return `
@@ -107,40 +67,66 @@ export function getWebviewContent(): string {
       <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Dependency Graph</title>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" />
         <style>
           body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
           }
+          #controls {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #f1f1f1;
+          }
+          #controls h1 {
+            margin: 0;
+            padding-right: 20px;
+            font-size: 24px;
+          }
+          #controls button {
+            margin-right: 10px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+          }
           #network {
             width: 100%;
-            height: 100vh;
+            height: calc(100vh - 60px);
             border: 1px solid lightgray;
           }
         </style>
       </head>
       <body>
-        <h1>Dependency Graph</h1>
+        <div id="controls">
+          <h1>Dependency Graph</h1>
+          <button id="showImporting">Show Importing</button>
+          <button id="showExporting">Show Exporting</button>
+          <button id="showAll">Show All</button>
+        </div>
         <div id="network"></div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
         <script>
           const vscode = acquireVsCodeApi();
+          let allEdges = [];
+          let network;
 
           window.addEventListener('message', event => {
             const { nodes, edges } = event.data;
+            allEdges = edges;
             renderGraph(nodes, edges);
           });
 
           function renderGraph(nodes, edges) {
               const container = document.getElementById('network');
-
               const data = {
                   nodes: new vis.DataSet(nodes),
-                  edges: new vis.DataSet(edges)
+                  edges: new vis.DataSet(edges.map(edge => ({
+                      ...edge,
+                      labels: Array.from(new Set(edge.weights.map(weight => weight.source))),
+                      label: ''
+                  })))
               };
 
               const options = {
@@ -156,7 +142,8 @@ export function getWebviewContent(): string {
                   edges: {
                       font: {
                           size: 12,
-                          color: '#000'
+                          color: '#000',
+                          align: 'top'
                       },
                       arrows: { to: { enabled: true, scaleFactor: 1 } },
                       color: { color: '#848484', highlight: '#848484' }
@@ -172,8 +159,71 @@ export function getWebviewContent(): string {
                   }
               };
 
-              // Initialize the network graph
-              new vis.Network(container, data, options);
+              network = new vis.Network(container, data, options);
+
+              network.on('click', function (params) {
+                  if (params.nodes.length > 0) {
+                      expandEdgesForNode(params.nodes[0]);
+                  }
+              });
+          }
+
+          function expandEdgesForNode(nodeId) {
+              const existingEdges = network.body.data.edges.get();
+              const connectedEdges = existingEdges.filter(edge => edge.from === nodeId || edge.to === nodeId);
+              
+              network.body.data.edges.remove(connectedEdges);
+
+              const expandedEdges = [];
+              connectedEdges.forEach(edge => {
+                  const originalEdge = allEdges.find(e => e.from === edge.from && e.to === edge.to);
+                  if (originalEdge) {
+                      originalEdge.weights.forEach(weight => {
+                          expandedEdges.push({
+                              id: \`\${edge.from}-\${edge.to}-\${weight.name}-\${weight.alias}\`,
+                              from: edge.from,
+                              to: edge.to,
+                              label: \`alias: \${weight.alias}\\nname: \${weight.name}\\nsource: \${weight.source}\\ntype: \${weight.type}\`,
+                          });
+                      });
+                  }
+              });
+
+              network.body.data.edges.add(expandedEdges);
+          }
+
+          document.getElementById('showImporting').addEventListener('click', () => {
+              filterEdges('Importing');
+          });
+
+          document.getElementById('showExporting').addEventListener('click', () => {
+              filterEdges('Exporting');
+          });
+
+          document.getElementById('showAll').addEventListener('click', () => {
+              filterEdges(null);
+          });
+
+          function filterEdges(labelFilter) {
+              const filteredEdges = labelFilter
+                  ? allEdges.filter(edge => edge.weights.some(weight => weight.source === labelFilter))
+                  : allEdges;
+
+              const processedEdges = filteredEdges.map(edge => {
+                  const uniqueLabels = Array.from(new Set(edge.weights.map(weight => weight.source)));
+                  return {
+                      from: edge.from,
+                      to: edge.to,
+                      label: uniqueLabels.join(', '),
+                  };
+              });
+
+              const data = {
+                  nodes: network.body.data.nodes,
+                  edges: new vis.DataSet(processedEdges)
+              };
+
+              network.setData(data);
           }
         </script>
       </body>
