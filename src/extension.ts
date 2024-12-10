@@ -16,14 +16,18 @@ import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvide
 import { establishWebSocketConnection } from './sockets/websockets';
 
 let ws: WebSocket | null = null;
-const fileData: { [key: string]: CodeResponse } = {};
-const FileDetectionData: { [key: string]: DetectionResponse } = {};
-const folderStructureData: { [key: string]: FolderStructure } = {};
+let fileData: { [key: string]: CodeResponse } = {};
+let FileDetectionData: { [key: string]: DetectionResponse } = {};
+let folderStructureData: { [key: string]: FolderStructure } = {};
 
 export async function activate(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
+
+    fileData = context.workspaceState.get<{ [key: string]: CodeResponse }>('fileData', {});
+    FileDetectionData = context.workspaceState.get<{ [key: string]: DetectionResponse }>('FileDetectionData', {});
+    folderStructureData = context.workspaceState.get<{ [key: string]: FolderStructure }>('folderStructureData', {});
 
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
     context.subscriptions.push(diagnosticCollection);
@@ -47,7 +51,29 @@ export async function activate(context: vscode.ExtensionContext) {
     const folderStructureProvider = createFolderStructureProvider(workspaceRoot);
     vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
 
+    if (newFiles && Object.keys(newFiles).length > 0) {
+        context.workspaceState.update('processedFiles', allFiles);
+        const fileSendPromises = Object.entries(newFiles).map(([filePath, content]) =>
+            sendFileToServer(filePath, content, fileData)
+        );
+        await Promise.all(fileSendPromises);
+    
+        const dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+        console.log("__________________DEPENDENCE GRAPH __________________");
+        console.log(dependencyGraph);
+        console.log("_____________________________________________________");
+        // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+        await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
 
+        // Save all the data 
+        context.workspaceState.update('processedFiles', allFiles);
+        context.workspaceState.update('fileData', fileData);
+        context.workspaceState.update('FileDetectionData', FileDetectionData);
+        context.workspaceState.update('folderStructureData', folderStructureData);
+
+    }
+
+    // Comment From Here
     const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
         sendFileToServer(filePath, content, fileData)
     );
@@ -57,10 +83,15 @@ export async function activate(context: vscode.ExtensionContext) {
     console.log("__________________DEPENDENCE GRAPH __________________")
     console.log(dependencyGraph);
     console.log("_____________________________________________________")
+    // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
     // Test Connection
-    // console.log("Checking Websocket connection");
-    // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+
+    context.workspaceState.update('processedFiles', allFiles);
+    context.workspaceState.update('fileData', fileData);
+    context.workspaceState.update('FileDetectionData', FileDetectionData);
+    context.workspaceState.update('folderStructureData', folderStructureData);
+    // Till Here
 
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
