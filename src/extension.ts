@@ -76,28 +76,28 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     // // Comment From Here
-    // const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
-    //     sendFileToServer(filePath, content, fileData)
-    // );
-    // await Promise.all(fileSendPromises);
+    const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
+        sendFileToServer(filePath, content, fileData)
+    );
+    await Promise.all(fileSendPromises);
 
-    // dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    // console.log("__________________DEPENDENCE GRAPH __________________")
-    // console.log(dependencyGraph);
-    // console.log("_____________________________________________________")
-    // // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    console.log("__________________DEPENDENCE GRAPH __________________")
+    console.log(dependencyGraph);
+    console.log("_____________________________________________________")
+    // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
 
-    // await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
-    // // Test Connection
+    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    // Test Connection
 
-    // context.workspaceState.update('processedFiles', allFiles);
-    // context.workspaceState.update('fileData', fileData);
-    // context.workspaceState.update('FileDetectionData', FileDetectionData);
-    // context.workspaceState.update('folderStructureData', folderStructureData);
-    // // Till Here
+    context.workspaceState.update('processedFiles', allFiles);
+    context.workspaceState.update('fileData', fileData);
+    context.workspaceState.update('FileDetectionData', FileDetectionData);
+    context.workspaceState.update('folderStructureData', folderStructureData);
+    // Till Here
 
-    // dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    // context.workspaceState.update('dependencyGraph', dependencyGraph);
+    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    context.workspaceState.update('dependencyGraph', dependencyGraph);
 
     console.log("__________________DEPENDENCE GRAPH __________________");
     console.log(dependencyGraph);
@@ -166,7 +166,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
                 if (refactoredCode) {
                     // Apply the refactored code
-                    await applyRefactoredCode(editor, diagnostic, refactoredCode);
+                    await applyRefactoredCode(editor, refactoredCode.refactored_code);
                     vscode.window.showInformationMessage("Code refactored successfully!");
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
@@ -216,10 +216,14 @@ async function sendDiagnosticToBackend(diagnostic: vscode.Diagnostic, filePath: 
 }
 
 
-// Function to replace problematic code with refactored code
-async function applyRefactoredCode(editor: vscode.TextEditor, diagnostic: vscode.Diagnostic, refactoredCode: string) {
+// Function to replace the entire content of the file with refactored code
+async function applyRefactoredCode(editor: vscode.TextEditor, refactoredCode: string) {
     const edit = new vscode.WorkspaceEdit();
-    edit.replace(editor.document.uri, diagnostic.range, refactoredCode);
+    const document = editor.document;
+    const firstLine = document.lineAt(0);
+    const lastLine = document.lineAt(document.lineCount - 1);
+    const fullRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
+    edit.replace(document.uri, fullRange, refactoredCode);
     await vscode.workspace.applyEdit(edit);
 }
 
@@ -234,7 +238,7 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         token: vscode.CancellationToken
     ): vscode.CodeAction[] | undefined {
         return context.diagnostics.map((diagnostic) => {
-            console.log("Diagnostics added:", diagnostic);
+       
 
             const action = new vscode.CodeAction("Fix this using codeNexus", vscode.CodeActionKind.QuickFix);
             action.command = {
