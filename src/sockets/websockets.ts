@@ -52,11 +52,16 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
             try {
                 const message: UserTriggeredDetectionResponse = JSON.parse(data);
                 console.log('Received message:', message);
+                if (message.task_status === 'started') {
+                    statusBarItem.text = "$(sync~spin) Analysis in progress...";
+                    statusBarItem.show();
+                }
                 if (message.task_status === 'success') {
+                    statusBarItem.text = "$(check) Analysis complete:Data processed";
                     vscode.window.showInformationMessage(`Task completed`);
                     if (message.processed_data)
                     {
-                        if (message.task_type === 'detection') { //data sucessfully processed
+                        if (message.task_type === 'detection') { 
                             for (const [file, data] of Object.entries(message.processed_data)) {
                                 const newTriggerData: UserTriggeredDetection = {
                                     data: data,
@@ -84,17 +89,33 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
                         }
                     }
                     console.log('FileDetectionData:', FileDetectionData);
+                    // Clear status after 3 seconds
+                setTimeout(() => {
+                    statusBarItem.hide();
+                }, 3000);
                 }
                 else if (message.task_status === 'task_failed') {//loading state error
+                    statusBarItem.text = "$(error) Analysis failed";
                     vscode.window.showErrorMessage(`Task failed: ${message.error}`);
+                    setTimeout(() => {
+                        statusBarItem.hide();
+                    }, 3000);
                 }
                 else if (message.task_status === 'task_started') {//loading state
+                    statusBarItem.text = "$(error) Task Started";
                     vscode.window.showInformationMessage(`Task started: ${message.correlation_id}`);
                 }
                 else {
-                    vscode.window.showErrorMessage(`Task failed: ${message.task_status}`);//errorloading state stopped
+                    statusBarItem.text = "$(error) Task failed";
+                    vscode.window.showErrorMessage(`Task failed: ${message.task_status}`);
+                    statusBarItem.hide();//errorloading state stopped
                 }
             } catch (error) {
+                statusBarItem.text = "$(error) Message parsing failed";
+                statusBarItem.show();
+                setTimeout(() => {
+                    statusBarItem.hide();
+                }, 3000);
                 if (error instanceof Error) {
                     vscode.window.showErrorMessage(`WebSocket error: ${error.message}`);
                     console.error(error);

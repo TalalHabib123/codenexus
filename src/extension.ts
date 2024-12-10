@@ -21,7 +21,10 @@ let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
 let folderStructureData: { [key: string]: FolderStructure } = {};
+let statusBarItem: vscode.StatusBarItem;
 let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
+
+
 export async function activate(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
@@ -33,7 +36,8 @@ export async function activate(context: vscode.ExtensionContext) {
     folderStructureData = context.workspaceState.get<{ [key: string]: FolderStructure }>('folderStructureData', {});
     dependencyGraph = context.workspaceState.get<{ [key: string]: Map<string, FileNode> }>('dependencyGraph', {});
 
- 
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+    context.subscriptions.push(statusBarItem);
     context.subscriptions.push(diagnosticCollection);
 
     const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -60,14 +64,22 @@ export async function activate(context: vscode.ExtensionContext) {
             sendFileToServer(filePath, content, fileData)
         );
         await Promise.all(fileSendPromises);
-    
+    statusBarItem.text = "$(sync~spin) Dependency Graph in progress...";
         dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
         console.log("__________________DEPENDENCE GRAPH __________________");
         console.log(dependencyGraph);
         console.log("_____________________________________________________");
 
         establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+        statusBarItem.text = "$(sync~spin) Static Analysis in progress...";
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
+        // Show success message
+        statusBarItem.text = "$(check) Analysis complete";
+        
+        // Hide after 2 seconds
+        setTimeout(() => {
+            statusBarItem.hide();
+        }, 2000);
         // Save all the data 
         context.workspaceState.update('processedFiles', allFiles);
         context.workspaceState.update('fileData', fileData);
@@ -76,29 +88,29 @@ export async function activate(context: vscode.ExtensionContext) {
         context.workspaceState.update('dependencyGraph', dependencyGraph);
     }
 
-    // Comment From Here
-    const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
-        sendFileToServer(filePath, content, fileData)
-    );
-    await Promise.all(fileSendPromises);
+    // // Comment From Here
+    // const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
+    //     sendFileToServer(filePath, content, fileData)
+    // );
+    // await Promise.all(fileSendPromises);
 
-    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    console.log("__________________DEPENDENCE GRAPH __________________")
-    console.log(dependencyGraph);
-    console.log("_____________________________________________________")
-    // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+    // dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    // console.log("__________________DEPENDENCE GRAPH __________________")
+    // console.log(dependencyGraph);
+    // console.log("_____________________________________________________")
+    // // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
 
-    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
-    // Test Connection
+    // await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    // // Test Connection
 
-    context.workspaceState.update('processedFiles', allFiles);
-    context.workspaceState.update('fileData', fileData);
-    context.workspaceState.update('FileDetectionData', FileDetectionData);
-    context.workspaceState.update('folderStructureData', folderStructureData);
-    // Till Here
+    // context.workspaceState.update('processedFiles', allFiles);
+    // context.workspaceState.update('fileData', fileData);
+    // context.workspaceState.update('FileDetectionData', FileDetectionData);
+    // context.workspaceState.update('folderStructureData', folderStructureData);
+    // // Till Here
 
-    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    context.workspaceState.update('dependencyGraph', dependencyGraph);
+    // dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    // context.workspaceState.update('dependencyGraph', dependencyGraph);
 
     console.log("__________________DEPENDENCE GRAPH __________________");
     console.log(dependencyGraph);
@@ -112,7 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
     console.log("__________________FOLDER STRUCTURE DATA __________________");
     console.log(folderStructureData);
     console.log("_____________________________________________________");
-
+    statusBarItem.text = "$(check) Analysis complete";
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
 
