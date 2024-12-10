@@ -16,9 +16,45 @@ export function showCodeSmellsInProblemsTab(
   diagnosticCollection.clear();
 
   
-  //long parameter
+
   for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
     const diagnostics: vscode.Diagnostic[] = [];
+  //   if (
+  //     detectionData.Unuse?.success &&
+  //     detectionData.long_parameter_list.data &&
+  //     "long_parameter_list" in detectionData.long_parameter_list.data
+  //   ) {
+  //     detectedCodeSmells.add("Long Parameter List");
+  //     const longparameter =
+  //       detectionData.long_parameter_list.data.long_parameter_list;
+  //     if (longparameter) {
+  //       longparameter.forEach((longparameterobj) => {
+  //         if (longparameterobj.long_parameter === true) {
+  //           const range = new vscode.Range(
+  //             new vscode.Position(longparameterobj.line_number - 1, 0),
+  //             new vscode.Position(longparameterobj.line_number - 1, 100)
+  //           );
+  //           const message = `Long parameter list detected: ${longparameterobj.function_name} with ${longparameterobj.long_parameter_count} parameters`;
+  //           const newDiagnostic = new vscode.Diagnostic(
+  //             range,
+  //             message,
+  //             vscode.DiagnosticSeverity.Warning
+  //           );
+
+  //           // Check for duplicate diagnostics
+  //           const existingDiagnostic = diagnostics.find(
+  //             (diag) =>
+  //               diag.range.isEqual(newDiagnostic.range) &&
+  //               diag.message === newDiagnostic.message
+  //           );
+
+  //           if (!existingDiagnostic) {
+  //             diagnostics.push(newDiagnostic);
+  //           }
+  //         }
+  //       });
+  //     }
+  //   }
     if (
       detectionData.long_parameter_list?.success &&
       detectionData.long_parameter_list.data &&

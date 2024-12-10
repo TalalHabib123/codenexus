@@ -157,7 +157,6 @@ const getDependencyData = async (
     });
     
     await Promise.all(promises); // Wait for all file reads to complete
-    console.log("THIS IS THE DEPENDENCY DATA: ", dependencyData);
     return dependencyData;
 };
 const getDependencies = (

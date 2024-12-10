@@ -21,6 +21,9 @@ let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
 let folderStructureData: { [key: string]: FolderStructure } = {};
+let statusBarItem: vscode.StatusBarItem;
+let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
+
 
 export async function activate(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('codenexus');
@@ -33,7 +36,8 @@ export async function activate(context: vscode.ExtensionContext) {
     folderStructureData = context.workspaceState.get<{ [key: string]: FolderStructure }>('folderStructureData', {});
     dependencyGraph = context.workspaceState.get<{ [key: string]: Map<string, FileNode> }>('dependencyGraph', {});
 
-    const diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+    context.subscriptions.push(statusBarItem);
     context.subscriptions.push(diagnosticCollection);
 
     const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -54,19 +58,28 @@ export async function activate(context: vscode.ExtensionContext) {
     const workspaceRoot = vscode.workspace.rootPath;
     const folderStructureProvider = createFolderStructureProvider(workspaceRoot);
     vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
-
+   
     if (newFiles && Object.keys(newFiles).length > 0) {
         const fileSendPromises = Object.entries(newFiles).map(([filePath, content]) =>
             sendFileToServer(filePath, content, fileData)
         );
         await Promise.all(fileSendPromises);
-    
+    statusBarItem.text = "$(sync~spin) Dependency Graph in progress...";
         dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
         console.log("__________________DEPENDENCE GRAPH __________________");
         console.log(dependencyGraph);
         console.log("_____________________________________________________");
+
         establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+        statusBarItem.text = "$(sync~spin) Static Analysis in progress...";
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
+        // Show success message
+        statusBarItem.text = "$(check) Analysis complete";
+        
+        // Hide after 2 seconds
+        setTimeout(() => {
+            statusBarItem.hide();
+        }, 2000);
         // Save all the data 
         context.workspaceState.update('processedFiles', allFiles);
         context.workspaceState.update('fileData', fileData);
@@ -111,7 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
     console.log("__________________FOLDER STRUCTURE DATA __________________");
     console.log(folderStructureData);
     console.log("_____________________________________________________");
-
+    statusBarItem.text = "$(check) Analysis complete";
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
 
@@ -163,7 +176,8 @@ export async function activate(context: vscode.ExtensionContext) {
             try {
                 // Send diagnostic to the backend
                 const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData);
-
+                RefreshDetection(context, folders, allFiles);
+                showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
                 if (refactoredCode) {
                     // Apply the refactored code
                     await applyRefactoredCode(editor, refactoredCode.refactored_code);
@@ -193,26 +207,19 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 
-// Function to send diagnostic details to the backend
-async function sendDiagnosticToBackend(diagnostic: vscode.Diagnostic, filePath: string) {
-    return "askdnskfn";
-    // try {
-    //     const response = await axios.post("http://your-backend-url/refactor", {
-    //         filePath: filePath,
-    //         range: {
-    //             startLine: diagnostic.range.start.line,
-    //             startCharacter: diagnostic.range.start.character,
-    //             endLine: diagnostic.range.end.line,
-    //             endCharacter: diagnostic.range.end.character,
-    //         },
-    //         message: diagnostic.message,
-    //     });
-
-    //     return response.data.refactoredCode; // Assuming the backend sends this key
-    // } catch (error) {
-    //     console.error("Error sending diagnostic to backend:", error);
-    //     throw error;
-    // }    
+async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
+    let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
+    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+        console.log("__________________DEPENDENCE GRAPH __________________");
+        console.log(dependencyGraph);
+        console.log("_____________________________________________________");
+        await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+        
+        context.workspaceState.update('processedFiles', allFiles);
+        context.workspaceState.update('fileData', fileData);
+        context.workspaceState.update('FileDetectionData', FileDetectionData);
+        context.workspaceState.update('folderStructureData', folderStructureData);
+        context.workspaceState.update('dependencyGraph', dependencyGraph);
 }
 
 
@@ -238,7 +245,7 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         token: vscode.CancellationToken
     ): vscode.CodeAction[] | undefined {
         return context.diagnostics.map((diagnostic) => {
-       
+    
 
             const action = new vscode.CodeAction("Fix this using codeNexus", vscode.CodeActionKind.QuickFix);
             action.command = {
@@ -292,3 +299,20 @@ class CodeSmellItem extends vscode.TreeItem {
     }
 }
 
+export function triggerCodeSmellDetection(
+    codeSmell: string
+): void {
+   
+  establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell);
+    console.log("__________________FILE DETECTION DATA __________________");
+    console.log(FileDetectionData);
+    console.log("_____________________________________________________");
+
+     // Showing detected code smells in the Problems tab
+     console.log("__________________FILE DETECTION DATA __________________");   
+     console.log(FileDetectionData);
+        console.log("_____________________________________________________");
+     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+    
+    vscode.window.showInformationMessage(`Problems updated for: ${codeSmell}`);
+}
