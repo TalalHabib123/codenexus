@@ -2,8 +2,6 @@ import * as vscode from 'vscode';
 import { WebviewPanel } from 'vscode';
 import * as path from 'path';
 
-
-
 const parseDependencyGraph = (dependencyGraph: any): { nodes: any[]; edges: any[] } => {
     const nodes: any[] = [];
     const edges: any[] = [];
@@ -30,6 +28,7 @@ const parseDependencyGraph = (dependencyGraph: any): { nodes: any[]; edges: any[
                 from: node.name,
                 to: dep.name,
                 weights: dep.weight,
+                id: `${node.name}-${dep.name}`,
             });
         });
     };
@@ -75,6 +74,7 @@ export function getWebviewContent(): string {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
           }
           #controls {
             display: flex;
@@ -86,13 +86,27 @@ export function getWebviewContent(): string {
             margin: 0;
             padding-right: 20px;
             font-size: 24px;
+            color: #333;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
           }
           #controls button {
             margin-right: 10px;
             padding: 5px 10px;
             font-size: 14px;
             cursor: pointer;
+            color: white;
+            background-color: #4f4c92;
+            border-radius: 7px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
           }
+            #controls button:hover {
+                background-color: #3f3c82;
+                color: white;
+                
+}
           #network {
             width: 100%;
             height: calc(100vh - 60px);
@@ -113,6 +127,7 @@ export function getWebviewContent(): string {
           const vscode = acquireVsCodeApi();
           let allEdges = [];
           let network;
+          let expandedNodes = new Set();
 
           window.addEventListener('message', event => {
             const { nodes, edges } = event.data;
@@ -126,8 +141,7 @@ export function getWebviewContent(): string {
                   nodes: new vis.DataSet(nodes),
                   edges: new vis.DataSet(edges.map(edge => ({
                       ...edge,
-                      labels: Array.from(new Set(edge.weights.map(weight => weight.source))),
-                      label: ''
+                      label: '',
                   })))
               };
 
@@ -165,33 +179,44 @@ export function getWebviewContent(): string {
 
               network.on('click', function (params) {
                   if (params.nodes.length > 0) {
-                      expandEdgesForNode(params.nodes[0]);
+                      toggleExpandCollapse(params.nodes[0]);
                   }
               });
           }
 
-          function expandEdgesForNode(nodeId) {
-              const existingEdges = network.body.data.edges.get();
-              const connectedEdges = existingEdges.filter(edge => edge.from === nodeId || edge.to === nodeId);
+          function toggleExpandCollapse(nodeId) {
+              if (!expandedNodes.has(nodeId)) {
+                  expandNode(nodeId);
+              } else {
+                  collapseNode(nodeId);
+              }
+          }
+
+          function expandNode(nodeId) {
+              expandedNodes.add(nodeId);
+              const connectedEdges = allEdges.filter(edge => edge.from === nodeId || edge.to === nodeId && edge.label === '');
               
-              network.body.data.edges.remove(connectedEdges);
-
-              const expandedEdges = [];
               connectedEdges.forEach(edge => {
-                  const originalEdge = allEdges.find(e => e.from === edge.from && e.to === edge.to);
-                  if (originalEdge) {
-                      originalEdge.weights.forEach(weight => {
-                          expandedEdges.push({
-                              id: \`\${edge.from}-\${edge.to}-\${weight.name}-\${weight.alias}\`,
-                              from: edge.from,
-                              to: edge.to,
-                              label: \`alias: \${weight.alias}\\nname: \${weight.name}\\nsource: \${weight.source}\\ntype: \${weight.type}\`,
-                          });
-                      });
-                  }
+                  edge.weights.forEach(weight => {
+                      const expandedEdge = {
+                          id:  \`\${edge.from}-\${edge.to}-\${weight.name}-\`,
+                          from: edge.from,
+                          to: edge.to,
+                          label: \`nName: \${weight.name}\\nsource: \${weight.source}\\ntype: \${weight.type}\`,
+                          title: \`Name: \${weight.name}<br>Source: \${weight.source}<br>Type: \${weight.type}\`,
+                      };
+                      network.body.data.edges.add(expandedEdge);
+                  });
               });
+          }
 
-              network.body.data.edges.add(expandedEdges);
+          function collapseNode(nodeId) {
+              expandedNodes.delete(nodeId);
+              const expandedEdgeIds = allEdges
+                  .filter(edge => edge.from === nodeId || edge.to === nodeId)
+                  .flatMap(edge => edge.weights.map(weight => \`\${edge.from}-\${edge.to}-\${weight.name}-\${weight.alias}\`));
+              
+              network.body.data.edges.remove(expandedEdgeIds);
           }
 
           document.getElementById('showImporting').addEventListener('click', () => {
@@ -211,14 +236,15 @@ export function getWebviewContent(): string {
                   ? allEdges.filter(edge => edge.weights.some(weight => weight.source === labelFilter))
                   : allEdges;
 
-              const processedEdges = filteredEdges.map(edge => {
-                  const uniqueLabels = Array.from(new Set(edge.weights.map(weight => weight.source)));
-                  return {
-                      from: edge.from,
-                      to: edge.to,
-                      label: uniqueLabels.join(', '),
-                  };
-              });
+              const processedEdges = filteredEdges.map(edge => ({
+                  id: edge.id,
+                  from: edge.from,
+                  to: edge.to,
+                  label: Array.from(new Set(edge.weights.map(weight => weight.source))).join(', '),
+              }));
+
+              // Reset expanded nodes as the graph data changes
+              expandedNodes.clear();
 
               const data = {
                   nodes: network.body.data.nodes,
