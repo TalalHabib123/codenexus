@@ -107,10 +107,10 @@ export async function activate(context: vscode.ExtensionContext) {
     // context.workspaceState.update('fileData', fileData);
     // context.workspaceState.update('FileDetectionData', FileDetectionData);
     // context.workspaceState.update('folderStructureData', folderStructureData);
-    // // Till Here
+    // Till Here
 
-    // dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    // context.workspaceState.update('dependencyGraph', dependencyGraph);
+    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    context.workspaceState.update('dependencyGraph', dependencyGraph);
 
     console.log("__________________DEPENDENCE GRAPH __________________");
     console.log(dependencyGraph);
@@ -183,7 +183,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
                 if (refactoredCode) {
                     // Apply the refactored code
-                    await applyRefactoredCode(editor, diagnostic, refactoredCode);
+                    await applyRefactoredCode(editor, refactoredCode.refactored_code);
                     vscode.window.showInformationMessage("Code refactored successfully!");
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
@@ -228,10 +228,14 @@ async function RefreshDetection(context: vscode.ExtensionContext, folders: strin
 }
 
 
-// Function to replace problematic code with refactored code
-async function applyRefactoredCode(editor: vscode.TextEditor, diagnostic: vscode.Diagnostic, refactoredCode: string) {
+// Function to replace the entire content of the file with refactored code
+async function applyRefactoredCode(editor: vscode.TextEditor, refactoredCode: string) {
     const edit = new vscode.WorkspaceEdit();
-    edit.replace(editor.document.uri, diagnostic.range, refactoredCode);
+    const document = editor.document;
+    const firstLine = document.lineAt(0);
+    const lastLine = document.lineAt(document.lineCount - 1);
+    const fullRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
+    edit.replace(document.uri, fullRange, refactoredCode);
     await vscode.workspace.applyEdit(edit);
 }
 
@@ -305,12 +309,10 @@ export function triggerCodeSmellDetection(
 ): void {
    
   establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell);
-    console.log("__________________FILE DETECTION DATA __________________");
-    console.log(FileDetectionData);
-    console.log("_____________________________________________________");
+    
 
      // Showing detected code smells in the Problems tab
-     console.log("__________________FILE DETECTION DATA __________________");   
+     console.log("__________________FILE DETECTION DATA in trigger __________________");   
      console.log(FileDetectionData);
         console.log("_____________________________________________________");
      showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);

@@ -3,23 +3,13 @@ import axios from 'axios';
 import { RefactorResponse, DeadCodeRefactorRequest } from '../../types/refactor_models';
 import { BASE_URL } from './api';
 
-async function sendFileForDeadCodeAnalysis(filePath: string, 
-    content: DeadCodeRefactorRequest,
-    fileData: { [key: string]: RefactorResponse }) {
+async function refactorDeadCode(
+    content: DeadCodeRefactorRequest) {
     try {
-        const fileName = path.basename(filePath);
-        const response = await axios.post<RefactorResponse>(`${BASE_URL}/refactor/dead-code`, { code: content.code, entity_name: content.entity_name, entity_type: content.entity_type });
-        const responseData = response.data;
-        if (responseData.success) {
-            console.log(`File ${fileName} sent successfully.`);
-            return responseData.refactored_code;
-        } else {
-            console.error(`Error in file ${fileName}: ${responseData.error}`);
-            return null
-        }
+        const response = await axios.post<RefactorResponse>(`${BASE_URL}/refactor/dead-code`, content);
+        return response
     } catch (e) {
-        console.error(`Failed to send file ${filePath}:`, e);
-        return
+        return;
     }
 }
 
@@ -36,4 +26,4 @@ async function getClassDeadSmells(code: string, class_name: string) {
     // }
 }
 
-export { sendFileForDeadCodeAnalysis, getClassDeadSmells };
+export { refactorDeadCode, getClassDeadSmells };

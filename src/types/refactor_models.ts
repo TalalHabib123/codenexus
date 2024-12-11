@@ -24,9 +24,9 @@ interface UnusedVariablesRefactorRequest {
 }
 
 interface MagicNumbersDetails {
-    magic_number: number | string; // Using string to handle float compatibility in JavaScript
+    magic_number: number | string; 
     line_number: number;
-    dependencies?: Dependency[];
+    
 }
 
 interface MagicNumberRefactorRequest {
@@ -37,28 +37,27 @@ interface MagicNumberRefactorRequest {
 
 interface InconsistentNamingRefactorRequest {
     code: string;
-    target_convention: string; // Convention to which naming will be aligned
-    naming_convention: string; // Existing naming convention in the code
+    target_convention: string; 
+    naming_convention: string; 
     dependencies?: Dependency[];
 }
 
 interface UnreachableCodeRequest {
     code: string;
-    unreachable_code_lines: number[]; // List of line numbers with unreachable code
-    dependencies?: Dependency[];
+    unreachable_code_lines: number[]; 
 }
 
 interface DeadCodeRefactorRequest {
     code: string;
-    entity_name: string; // Name of the dead entity (function, class, variable)
-    entity_type: string; // Type of the dead entity ("function", "class", "variable")
+    entity_name: string; 
+    entity_type: string; 
     dependencies?: Dependency[];
 }
 
 interface RefactorResponse {
     refactored_code: string;
     success: boolean;
-    error?: string; // Optional error message in case of failure
+    error?: string; 
 }
 
 

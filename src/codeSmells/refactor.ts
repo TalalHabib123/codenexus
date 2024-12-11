@@ -1,25 +1,192 @@
 import { FileNode, DependentNode } from '../types/graph';
-import { DetectionResponse } from '../types/api';
-import { Dependency } from "../types/refactor_models"
+import { DeadCodeResponse, DetectionResponse } from '../types/api';
+import { Dependency, 
+        UnreachableCodeRequest,
+        MagicNumberRefactorRequest,
+        UnusedVariablesRefactorRequest, } from "../types/refactor_models";
 import * as vscode from 'vscode';
+
+import { RefactorResponse } from '../types/refactor_models';
+import {refactorNamingConvention} from '../utils/refactor_api/naming_convention_api';
+import { refactorDeadCode } from '../utils/refactor_api/dead_code_api';
+import { sendFileForUnreachableCodeAnalysis } from '../utils/refactor_api/unreachable_code_api';
+import { refactorMagicNumbers } from '../utils/refactor_api/magic_number_api';
+import { refactorUnusedVars } from '../utils/refactor_api/unused_var_api';
+
 
 export const refactor = async (
     diagnostic: vscode.Diagnostic, // Diagnostic structure
     filePath: string, // Path to the file being refactored
     dependencyGraph: { [key: string]: Map<string, FileNode> }, // Nested dependency graph
     FileDetectionData: { [key: string]: DetectionResponse } // Detection data
-): Promise<string | void> => {
+): Promise<RefactorResponse | undefined> => {
     try {
         const message = diagnostic.message;
-        
-        if (diagnostic.message.includes("Inconsistent naming convention"))
-        {
+        console.log("Diagnostic message:", message);
+
+        if (diagnostic.message.includes("Inconsistent naming convention")) {
             const dependencyData = await getDependencyData(dependencyGraph, filePath);
-            const codeSmellData = FileDetectionData[filePath];
-            console.log(codeSmellData.naming_convention);
+            console.log("Dependency data:", dependencyData);
+            const codeSmellData = FileDetectionData[filePath]?.naming_convention?.data;
+
+            if (codeSmellData && "inconsistent_naming" in codeSmellData) {
+                const inconsistentNamingData = codeSmellData.inconsistent_naming;
+                const target_convention = inconsistentNamingData?.reduce((prev, current) =>
+                    current.type_count > prev.type_count ? current : prev
+                );
+                console.log("Target convention:", target_convention);
+
+                if (target_convention?.type) {
+                    console.log("Target convention:", target_convention.type);
+                    const uri = vscode.Uri.file(filePath);
+                    const fileData = await vscode.workspace.fs.readFile(uri);
+                    const fileContent = new TextDecoder().decode(fileData);
+                    const refactorRequest = {
+                        code: fileContent,
+                        target_convention: target_convention.type,
+                        naming_convention: "camelCase",
+                        dependencies: dependencyData,
+                    };
+                    const response = await refactorNamingConvention(refactorRequest);
+                    if (response.data.success) {
+                        console.log("Refactor successful:", response.data.refactored_code);
+                        return response.data;
+                    }
+                }
+            }
+        } else if (diagnostic.message.includes("dead code")) {
+            const uri = vscode.Uri.file(filePath);
+            const fileData = await vscode.workspace.fs.readFile(uri);
+            let fileContent = new TextDecoder().decode(fileData);
+            //console.log("FileDetection", FileDetectionData[filePath].dead_code);
+            const data = FileDetectionData[filePath]?.dead_code;
+            let updatedCode = fileContent;
+            if (data && data.success) {
+                console.log("Dead Code data", data);
+                if ("class_details" in data && Array.isArray(data.class_details) && data.class_details.length > 0) {
+                    data.class_details.forEach(async (classDetail: any) => {
+                        if (!classDetail.has_instance){
+                            const refactorRequest = {
+                                code: fileContent,
+                                entity_name: classDetail.class_name,
+                                entity_type: "class",
+                                dependencies: []
+                            };
+                            const response = await refactorDeadCode(refactorRequest);
+                            updatedCode = response?.data.refactored_code || fileContent;
+                          }});
+                        }
+                if ("function_names" in data && Array.isArray(data.function_names) && data.function_names.length > 0) {
+                    data.function_names.forEach(async (name: any) => {
+                        const refactorRequest = {
+                            code: updatedCode,
+                            entity_name: name,
+                            entity_type: "function",
+                            dependencies: []
+                        };
+                        const response = await refactorDeadCode(refactorRequest);
+                        updatedCode = response?.data.refactored_code || updatedCode;
+                    });
+                }
+                if ("global_variables" in data && Array.isArray(data.global_variables) && data.global_variables.length > 0) {
+                    data.global_variables.forEach(async (name: any) => {
+                        const refactorRequest = {
+                            code: updatedCode,
+                            entity_name: name,
+                            entity_type: "variable",
+                            dependencies: []
+                        };
+                        const response = await refactorDeadCode(refactorRequest);
+                        updatedCode = response?.data.refactored_code || updatedCode;
+                    });
+                }
+                if ("imports" in data && 
+                    typeof data.imports === "object" &&  
+                    data.imports !== null &&
+                    "dead_imports" in data.imports && 
+                    Array.isArray(data.imports.dead_imports) && 
+                    data.imports.dead_imports.length > 0) {
+                    data.imports.dead_imports.forEach(async (name: any) => {
+                        const refactorRequest = {
+                            code: updatedCode,
+                            entity_name: name,
+                            entity_type: "import",
+                            dependencies: []
+                        };
+                        const response = await refactorDeadCode(refactorRequest);
+                        updatedCode = response?.data.refactored_code || updatedCode;
+                    });
+                }
+            }
+        }else if (diagnostic.message.includes("Unreachable code")) {
+            const uri = vscode.Uri.file(filePath);
+            const fileData = await vscode.workspace.fs.readFile(uri);
+            let fileContent = new TextDecoder().decode(fileData);
+            
+            const data = FileDetectionData[filePath]?.unreachable_code;
+            console.log("data",data);
+            if (data && "unreachable_code" in data && Array.isArray(data.unreachable_code)) {
+                console.log("Unreachable Code data", data.unreachable_code);
+                const unreachable_lines = data?.unreachable_code?.map((line: string) => {
+                    const lastElement = line.split(" ").pop();
+                    return lastElement !== undefined ? parseInt(lastElement, 10) : NaN;
+                });
+                console.log("Unreachable lines:", unreachable_lines);
+                const refactorRequest:UnreachableCodeRequest = {
+                    code: fileContent,
+                    unreachable_code_lines: unreachable_lines || [],
+                };
+                const refactoredCode = await sendFileForUnreachableCodeAnalysis(filePath, refactorRequest);
+                console.log("Refactored code", refactoredCode);
+                return refactoredCode || undefined;
+            }
+            
+        } else if (diagnostic.message.includes("Magic number")) {
+            // Refactor magic numbers
+            const MagicNumber = diagnostic.message.split(" ").pop();
+            const magicNumber = parseInt(MagicNumber || "", 10);
+            const lineNumber = diagnostic.range.start.line;
+            console.log("Magic number:", magicNumber);
+            console.log("Line number:", lineNumber);
+            console.log("line number type: ", typeof(lineNumber));
+            console.log("magic_number type", typeof(magicNumber));
+            const magic_numbers = [
+                {
+                    magic_number: magicNumber,
+                    line_number: lineNumber,
+                },
+            ];
+            const uri = vscode.Uri.file(filePath);
+            const fileData = await vscode.workspace.fs.readFile(uri);
+            const fileContent = new TextDecoder().decode(fileData);
+
+            const data: MagicNumberRefactorRequest = {
+                code: fileContent,
+                magic_numbers: magic_numbers,
+                dependencies: []
+            };  
+            const response = await refactorMagicNumbers(data);
+            return response.data;
+
+        } else if (diagnostic.message.includes("Unused variable")) {
+            // Refactor unused variables
+            const uri = vscode.Uri.file(filePath);
+            const fileData = await vscode.workspace.fs.readFile(uri);
+            const fileContent = new TextDecoder().decode(fileData);
+
+            const unused_variables = diagnostic.message.split(" ").pop() || "";
+            console.log("Unused variable:", unused_variables);
+            const data: UnusedVariablesRefactorRequest = {
+                code: fileContent,
+                unused_variables: [unused_variables],
+                dependencies: [],
+            };
+            const response = await refactorUnusedVars(data);
+            return response.data; 
         }
-    } catch (err) {
-        console.error("Error during refactoring:", err);
+
+    } catch (e) {
+        console.error("Error in refactoring:", e);
     }
 };
 
@@ -70,9 +237,7 @@ const getDependencies = (
     filePath: string,
     dependencyMap: Map<string, FileNode> // Inner Map corresponding to a specific key in the dependencyGraph
 ): Set<DependentNode> | null => {
-    // Ensure the dependency map is a Map
-
-    // Check if the filePath exists in the dependency map
+     // Check if the filePath exists in the dependency map
     const fileNode = dependencyMap.get(filePath);
     if (!fileNode) {
         console.error(`File ${filePath} not found in the dependency map.`);
