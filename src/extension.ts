@@ -75,7 +75,7 @@ export async function activate(context: vscode.ExtensionContext) {
         console.log(dependencyGraph);
         console.log("_____________________________________________________");
 
-        establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+        establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object', diagnosticCollection);
         statusBarItem.text = "$(sync~spin) Static Analysis in progress...";
         statusBarItem.show();
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
