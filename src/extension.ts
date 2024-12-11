@@ -189,6 +189,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
             const filePath = editor.document.uri.fsPath;
             try {
+                statusBarItem.text = "$(sync~spin) Refactoring in progress...";
                 // Send diagnostic to the backend
                 const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData, refactorData);
 
@@ -196,6 +197,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 if (refactoredCode) {
 
                     await applyRefactoredCode(editor, refactoredCode.refactored_code);
+                    statusBarItem.text = "$(sync~spin) Refactoring completed!";
                     vscode.window.showInformationMessage("Code refactored successfully!");
 
                     RefreshDetection(context, folders, allFiles);
@@ -206,12 +208,15 @@ export async function activate(context: vscode.ExtensionContext) {
                     
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
+                    statusBarItem.text = "$(sync~spin) Refactoring Failed!";
                 }
             } catch (error) {
                 if (error instanceof Error) {
                     vscode.window.showErrorMessage(`Error: ${error.message}`);
+                    statusBarItem.text = "$(sync~spin)Error!";
                 } else {
                     vscode.window.showErrorMessage('An unknown error occurred.');
+                    statusBarItem.text = "$(sync~spin) Unknown Error!";
                 }
             }
         }
@@ -235,7 +240,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
 async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
+    statusBarItem.text = "$(sync~spin) Detection in progress...";
     await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    statusBarItem.text = "$(check) Detection complete";
 
 }
 
@@ -261,8 +268,6 @@ function removeDiagnostic(filePath: string, diagnostic: vscode.Diagnostic): void
 
         // Update the diagnostic collection with the new array
         diagnosticCollection.set(uri, updatedDiagnostics);
-
-        vscode.window.showInformationMessage(`Diagnostic for "${diagnostic.message}" removed.`);
     } else {
         console.warn("No matching diagnostic found to remove.");
     }
