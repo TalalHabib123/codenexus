@@ -6,19 +6,21 @@ import { Dependency,
         UnusedVariablesRefactorRequest, } from "../types/refactor_models";
 import * as vscode from 'vscode';
 
-import { RefactorResponse } from '../types/refactor_models';
+import { RefactorResponse, RefactoringData } from '../types/refactor_models';
 import {refactorNamingConvention} from '../utils/refactor_api/naming_convention_api';
 import { refactorDeadCode } from '../utils/refactor_api/dead_code_api';
 import { sendFileForUnreachableCodeAnalysis } from '../utils/refactor_api/unreachable_code_api';
 import { refactorMagicNumbers } from '../utils/refactor_api/magic_number_api';
 import { refactorUnusedVars } from '../utils/refactor_api/unused_var_api';
+import { randomUUID } from 'crypto';
 
 
 export const refactor = async (
     diagnostic: vscode.Diagnostic, // Diagnostic structure
     filePath: string, // Path to the file being refactored
     dependencyGraph: { [key: string]: Map<string, FileNode> }, // Nested dependency graph
-    FileDetectionData: { [key: string]: DetectionResponse } // Detection data
+    FileDetectionData: { [key: string]: DetectionResponse }, // Detection data
+    refactorData: { [key: string]: Array<RefactoringData> } // Refactor data
 ): Promise<RefactorResponse | undefined> => {
     try {
         const message = diagnostic.message;
@@ -50,6 +52,40 @@ export const refactor = async (
                     const response = await refactorNamingConvention(refactorRequest);
                     if (response.data.success) {
                         console.log("Refactor successful:", response.data.refactored_code);
+                        const newRefactrData: RefactoringData = {
+                            orginal_code: fileContent,
+                            refactored_code: response.data.refactored_code,
+                            refactoring_type: "Inconsistent Naming Convention",
+                            time: new Date(),
+                            cascading_refactor: false,
+                            job_id: randomUUID(),
+                            ai_based: false,
+                            files_affected: [],
+                            outdated: false,
+                            success: true,
+                            error: "",
+                        };
+                        const effectedFiles: string[] = [];
+                        dependencyData?.forEach((dependency) => {
+                            if (dependency.valid && !effectedFiles.includes(dependency.name) 
+                                && dependency.name !== filePath && dependency.weight?.some(w => w.source === "Exporting"))
+                            {
+                                effectedFiles.push(dependency.name);
+                            }
+                        });
+                        if (effectedFiles.length > 0) {
+                            newRefactrData.files_affected = effectedFiles;
+                            newRefactrData.cascading_refactor = true;
+                        }
+                        if (!refactorData[filePath]) {
+                            refactorData[filePath] = [];
+                        }
+                        for (let i = 0; i < refactorData[filePath].length; i++) {
+                            if (refactorData[filePath][i].refactoring_type === "Inconsistent Naming Convention") {
+                                refactorData[filePath][i].outdated = true;
+                            }
+                        }
+                        refactorData[filePath].push(newRefactrData);
                         return response.data;
                     }
                 }
@@ -117,6 +153,29 @@ export const refactor = async (
                         updatedCode = response?.data.refactored_code || updatedCode;
                     });
                 }
+
+                const newRefactrData: RefactoringData = {
+                    orginal_code: fileContent,
+                    refactored_code: updatedCode,
+                    refactoring_type: "Dead Code",
+                    time: new Date(),
+                    cascading_refactor: false,
+                    job_id: randomUUID(),
+                    ai_based: false,
+                    files_affected: [],
+                    outdated: false,
+                    success: true,
+                    error: "",
+                };
+                if (!refactorData[filePath]) {
+                    refactorData[filePath] = [];
+                }
+                for (let i = 0; i < refactorData[filePath].length; i++) {
+                    if (refactorData[filePath][i].refactoring_type === "Dead Code") {
+                        refactorData[filePath][i].outdated = true;
+                    }
+                }
+                refactorData[filePath].push(newRefactrData);
             }
         }else if (diagnostic.message.includes("Unreachable code")) {
             const uri = vscode.Uri.file(filePath);
@@ -138,6 +197,31 @@ export const refactor = async (
                 };
                 const refactoredCode = await sendFileForUnreachableCodeAnalysis(filePath, refactorRequest);
                 console.log("Refactored code", refactoredCode);
+                if (refactoredCode && refactoredCode.success) {
+                    console.log("Refactor successful:", refactoredCode.refactored_code);
+                    const newRefactrData: RefactoringData = {
+                        orginal_code: fileContent,
+                        refactored_code: refactoredCode.refactored_code,
+                        refactoring_type: "Unreachable Code",
+                        time: new Date(),
+                        cascading_refactor: false,
+                        job_id: randomUUID(),
+                        ai_based: false,
+                        files_affected: [],
+                        outdated: false,
+                        success: true,
+                        error: "",
+                    };
+                    if (!refactorData[filePath]) {
+                        refactorData[filePath] = [];
+                    }
+                    for (let i = 0; i < refactorData[filePath].length; i++) {
+                        if (refactorData[filePath][i].refactoring_type === "Unreachable Code") {
+                            refactorData[filePath][i].outdated = true;
+                        }
+                    }
+                    refactorData[filePath].push(newRefactrData);
+                }
                 return refactoredCode || undefined;
             }
             
@@ -166,6 +250,31 @@ export const refactor = async (
                 dependencies: []
             };  
             const response = await refactorMagicNumbers(data);
+            if (response.data.success) {
+                console.log("Refactor successful:", response.data.refactored_code);
+                const newRefactrData: RefactoringData = {
+                    orginal_code: fileContent,
+                    refactored_code: response.data.refactored_code,
+                    refactoring_type: "Magic Number",
+                    time: new Date(),
+                    cascading_refactor: false,
+                    job_id: randomUUID(),
+                    ai_based: false,
+                    files_affected: [],
+                    outdated: false,
+                    success: true,
+                    error: "",
+                };
+                if (!refactorData[filePath]) {
+                    refactorData[filePath] = [];
+                }
+                for (let i = 0; i < refactorData[filePath].length; i++) {
+                    if (refactorData[filePath][i].refactoring_type === "Magic Number") {
+                        refactorData[filePath][i].outdated = true;
+                    }
+                }
+                refactorData[filePath].push(newRefactrData);
+            }
             return response.data;
 
         } else if (diagnostic.message.includes("Unused variable")) {
@@ -182,6 +291,31 @@ export const refactor = async (
                 dependencies: [],
             };
             const response = await refactorUnusedVars(data);
+            if (response.data.success) {
+                console.log("Refactor successful:", response.data.refactored_code);
+                const newRefactrData: RefactoringData = {
+                    orginal_code: fileContent,
+                    refactored_code: response.data.refactored_code,
+                    refactoring_type: "Unused Variable",
+                    time: new Date(),
+                    cascading_refactor: false,
+                    job_id: randomUUID(),
+                    ai_based: false,
+                    files_affected: [],
+                    outdated: false,
+                    success: true,
+                    error: "",
+                };
+                if (!refactorData[filePath]) {
+                    refactorData[filePath] = [];
+                }
+                for (let i = 0; i < refactorData[filePath].length; i++) {
+                    if (refactorData[filePath][i].refactoring_type === "Unused Variable") {
+                        refactorData[filePath][i].outdated = true;
+                    }
+                }
+                refactorData[filePath].push(newRefactrData);
+            }
             return response.data; 
         }
 

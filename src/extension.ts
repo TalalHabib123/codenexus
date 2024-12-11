@@ -17,6 +17,7 @@ import { createWebviewPanel, getWebviewContent } from './utils/ui/webviewast';
 import { refactor } from './codeSmells/refactor';
 import { establishWebSocketConnection } from './sockets/websockets';
 import { CodeSmellsProvider } from './utils/ui/problemsTab';
+import { RefactoringData } from './types/refactor_models';
 import { userTriggeredcodesmell } from './utils/ui/problemsTab';
 
 let ws: WebSocket | null = null;
@@ -25,6 +26,7 @@ let FileDetectionData: { [key: string]: DetectionResponse } = {};
 let folderStructureData: { [key: string]: FolderStructure } = {};
 let statusBarItem: vscode.StatusBarItem;
 let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
+let refactorData: { [key: string]: Array<RefactoringData> } = {};
 
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -43,6 +45,7 @@ export async function activate(context: vscode.ExtensionContext) {
     FileDetectionData = context.workspaceState.get<{ [key: string]: DetectionResponse }>('FileDetectionData', {});
     folderStructureData = context.workspaceState.get<{ [key: string]: FolderStructure }>('folderStructureData', {});
     dependencyGraph = context.workspaceState.get<{ [key: string]: Map<string, FileNode> }>('dependencyGraph', {});
+    refactorData = context.workspaceState.get<{ [key: string]: Array<RefactoringData> }>('refactorData', {});
 
 
     context.subscriptions.push(diagnosticCollection);
@@ -171,9 +174,8 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(
         vscode.commands.registerCommand('codenexus.showAST', async () => {
+            dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
             createWebviewPanel(context, dependencyGraph);
-
-
         })
     );
     const refactorCommand = vscode.commands.registerCommand(
@@ -188,15 +190,18 @@ export async function activate(context: vscode.ExtensionContext) {
             const filePath = editor.document.uri.fsPath;
             try {
                 // Send diagnostic to the backend
-                const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData);
-               
-                
+                const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData, refactorData);
+
+
                 if (refactoredCode) {
-                  
+
                     await applyRefactoredCode(editor, refactoredCode.refactored_code);
                     vscode.window.showInformationMessage("Code refactored successfully!");
                     RefreshDetection(context, folders, allFiles);
                     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+                    context.workspaceState.update('FileDetectionData', FileDetectionData);
+                    context.workspaceState.update('refactorData', refactorData);
+                    
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
                 }
@@ -228,8 +233,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
-        await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
-        
+    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+
 }
 
 
@@ -259,17 +264,17 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         const selectedDiagnostic = context.diagnostics.find(
             (diagnostic) => diagnostic.range.intersection(range) !== undefined
         );
-    
+
         if (!selectedDiagnostic) {
             return undefined; // No matching diagnostic
         }
-    
+
         // Step 2: Filter diagnostics by related `code` field
         const relatedDiagnostics = context.diagnostics.filter(
             (diagnostic) =>
                 diagnostic.code === selectedDiagnostic.code // Match only related diagnostics
         );
-    
+
         // Step 3: Create code actions for the filtered diagnostics
         return relatedDiagnostics.map((diagnostic) => {
             const action = new vscode.CodeAction(
@@ -286,7 +291,7 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
             return action;
         });
     }
-    
+
 
 
 }

@@ -60,6 +60,20 @@ interface RefactorResponse {
     error?: string; 
 }
 
+interface RefactoringData {
+    orginal_code: string;
+    refactored_code?: string;
+    refactoring_type?: string;
+    time: Date;
+    cascading_refactor?: boolean;
+    job_id?: string;
+    ai_based?: boolean;
+    files_affected?: string[] | [];
+    outdated?: boolean;
+    success: boolean;
+    error?: string;
+}
+
 
 export {
     RefactorRequest,
@@ -69,5 +83,6 @@ export {
     UnreachableCodeRequest,
     DeadCodeRefactorRequest,
     RefactorResponse, 
-    Dependency
+    Dependency,
+    RefactoringData
 };
