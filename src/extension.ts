@@ -116,8 +116,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // context.workspaceState.update('folderStructureData', folderStructureData);
     // Till Here
 
-    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    context.workspaceState.update('dependencyGraph', dependencyGraph);
+    // dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    // context.workspaceState.update('dependencyGraph', dependencyGraph);
 
     console.log("__________________DEPENDENCE GRAPH __________________");
     console.log(dependencyGraph);
