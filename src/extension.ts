@@ -13,7 +13,7 @@ import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
 import { detectedCodeSmells } from './utils/ui/problemsTab';
 import { registerCodeActionProvider } from './utils/ui/DiagnosticAction';
 import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvider';
-import { createWebviewPanel,getWebviewContent} from './utils/ui/webviewast'; 
+import { createWebviewPanel, getWebviewContent } from './utils/ui/webviewast';
 import { refactor } from './codeSmells/refactor';
 import { establishWebSocketConnection } from './sockets/websockets';
 
@@ -29,11 +29,11 @@ export async function activate(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
-    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left,100);
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     context.subscriptions.push(statusBarItem);
-   
+
     require('./websockets').activate(context);
-    
+
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
 
     fileData = context.workspaceState.get<{ [key: string]: CodeResponse }>('fileData', {});
@@ -41,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
     folderStructureData = context.workspaceState.get<{ [key: string]: FolderStructure }>('folderStructureData', {});
     dependencyGraph = context.workspaceState.get<{ [key: string]: Map<string, FileNode> }>('dependencyGraph', {});
 
-   
+
     context.subscriptions.push(diagnosticCollection);
 
     const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -62,14 +62,14 @@ export async function activate(context: vscode.ExtensionContext) {
     const workspaceRoot = vscode.workspace.rootPath;
     const folderStructureProvider = createFolderStructureProvider(workspaceRoot);
     vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
-   
+
     if (newFiles && Object.keys(newFiles).length > 0) {
         const fileSendPromises = Object.entries(newFiles).map(([filePath, content]) =>
             sendFileToServer(filePath, content, fileData)
         );
         await Promise.all(fileSendPromises);
-    statusBarItem.text = "$(sync~spin) Dependency Graph in progress...";
-    statusBarItem.show();
+        statusBarItem.text = "$(sync~spin) Dependency Graph in progress...";
+        statusBarItem.show();
         dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
         console.log("__________________DEPENDENCE GRAPH __________________");
         console.log(dependencyGraph);
@@ -82,7 +82,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // Show success message
         statusBarItem.text = "$(check) Analysis complete";
         statusBarItem.show();
-        
+
         // Hide after 2 seconds
         setTimeout(() => {
             statusBarItem.hide();
@@ -167,11 +167,11 @@ export async function activate(context: vscode.ExtensionContext) {
             manualCodeProvider.toggleCodeSmell(item);
         })
     );
-      context.subscriptions.push(
+    context.subscriptions.push(
         vscode.commands.registerCommand('codenexus.showAST', async () => {
-         createWebviewPanel(context, dependencyGraph);
+            createWebviewPanel(context, dependencyGraph);
 
-           
+
         })
     )
     const refactorCommand = vscode.commands.registerCommand(
@@ -207,7 +207,7 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     statusBarItem.text = "$(check) Analysis complete";
     statusBarItem.show();
-//push staticBarItem to context.subscriptions
+    //push staticBarItem to context.subscriptions
     context.subscriptions.push(statusBarItem);
 
     context.subscriptions.push(refactorCommand);
@@ -225,16 +225,16 @@ export async function activate(context: vscode.ExtensionContext) {
 async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
     dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-        console.log("__________________DEPENDENCE GRAPH __________________");
-        console.log(dependencyGraph);
-        console.log("_____________________________________________________");
-        await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
-        
-        context.workspaceState.update('processedFiles', allFiles);
-        context.workspaceState.update('fileData', fileData);
-        context.workspaceState.update('FileDetectionData', FileDetectionData);
-        context.workspaceState.update('folderStructureData', folderStructureData);
-        context.workspaceState.update('dependencyGraph', dependencyGraph);
+    console.log("__________________DEPENDENCE GRAPH __________________");
+    console.log(dependencyGraph);
+    console.log("_____________________________________________________");
+    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+
+    context.workspaceState.update('processedFiles', allFiles);
+    context.workspaceState.update('fileData', fileData);
+    context.workspaceState.update('FileDetectionData', FileDetectionData);
+    context.workspaceState.update('folderStructureData', folderStructureData);
+    context.workspaceState.update('dependencyGraph', dependencyGraph);
 }
 
 
@@ -260,7 +260,7 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         token: vscode.CancellationToken
     ): vscode.CodeAction[] | undefined {
         return context.diagnostics.map((diagnostic) => {
-    
+
 
             const action = new vscode.CodeAction("Fix this using codeNexus", vscode.CodeActionKind.QuickFix);
             action.command = {
@@ -317,15 +317,15 @@ class CodeSmellItem extends vscode.TreeItem {
 export function triggerCodeSmellDetection(
     codeSmell: string
 ): void {
-   
-  establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell);
-    
 
-     // Showing detected code smells in the Problems tab
-     console.log("__________________FILE DETECTION DATA in trigger __________________");   
-     console.log(FileDetectionData);
-        console.log("_____________________________________________________");
-     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
-    
-    vscode.window.showInformationMessage(`Problems updated for: ${codeSmell}`);
+    establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell, diagnosticCollection);
+
+    // if (! (!ws || ws.readyState !== WebSocket.OPEN)) {
+    //     console.log("__________________FILE DETECTION DATA in trigger __________________");   
+    //     console.log(FileDetectionData);
+    //         console.log("_____________________________________________________");
+    //     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+
+    //     vscode.window.showInformationMessage(`Problems updated for: ${codeSmell}`);
+    // }
 }
