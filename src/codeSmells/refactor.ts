@@ -158,7 +158,7 @@ export const refactor = async (
 
                 const newRefactrData: RefactoringData = {
                     orginal_code: fileContent,
-                    refactored_code: updatedCode,
+                    refactored_code: updatedCode.refactored_code,
                     refactoring_type: "Dead Code",
                     time: new Date(),
                     cascading_refactor: false,
