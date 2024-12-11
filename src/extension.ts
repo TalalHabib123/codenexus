@@ -158,7 +158,7 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(runAnalysis);
-    const manualCodeProvider = new ManualCodeProvider();
+    const manualCodeProvider = new ManualCodeProvider(context);
     vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
 
     context.subscriptions.push(
@@ -172,7 +172,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 
         })
-    )
+    );
     const refactorCommand = vscode.commands.registerCommand(
         "extension.refactorProblem",
         async (diagnostic: vscode.Diagnostic) => {
@@ -235,6 +235,7 @@ async function RefreshDetection(context: vscode.ExtensionContext, folders: strin
     context.workspaceState.update('folderStructureData', folderStructureData);
     context.workspaceState.update('dependencyGraph', dependencyGraph);
 }
+
 
 
 // Function to replace the entire content of the file with refactored code
@@ -314,10 +315,11 @@ class CodeSmellItem extends vscode.TreeItem {
 }
 
 export function triggerCodeSmellDetection(
-    codeSmell: string
+    codeSmell: string,
+    context: vscode.ExtensionContext
 ): void {
 
-    establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell, diagnosticCollection);
+    establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell, diagnosticCollection, context);
 
     // if (! (!ws || ws.readyState !== WebSocket.OPEN)) {
     //     console.log("__________________FILE DETECTION DATA in trigger __________________");   

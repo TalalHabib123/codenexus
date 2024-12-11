@@ -49,7 +49,8 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
     FileDetectionData: { [key: string]: DetectionResponse } ,
     taskType: string,
     taskJob: string,
-    diagnosticCollection: vscode.DiagnosticCollection
+    diagnosticCollection: vscode.DiagnosticCollection,
+    context: vscode.ExtensionContext
 ) {
     const taskData = taskDataGenerator(fileData, taskType, detectionHelper[taskJob]);
     if (!taskData || Object.keys(taskData).length === 0) {
@@ -108,6 +109,7 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
                             console.log("_____________________________________________________");
                             showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
                             vscode.window.showInformationMessage(`Problems updated for: ${taskJob}`);
+                            context.workspaceState.update('FileDetectionData', FileDetectionData);
                         }
                     }
                     
