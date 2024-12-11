@@ -1,3 +1,4 @@
+import { refactor } from './../codeSmells/refactor';
 import { interfaces } from "mocha";
 
 interface GlobalVariable {
@@ -226,6 +227,8 @@ interface DeadClassResponse {
     success: boolean;
     error?: string;
 }
+
+
 
 export { CodeResponse, 
     DeadCodeResponse, 
