@@ -3,10 +3,10 @@ import {triggerCodeSmellDetection} from '../../extension'
 export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<ManualCodeItem | undefined | void> = new vscode.EventEmitter<ManualCodeItem | undefined | void>();
     readonly onDidChangeTreeData: vscode.Event<ManualCodeItem | undefined | void> = this._onDidChangeTreeData.event;
-
+    private context: vscode.ExtensionContext;
     private items: ManualCodeItem[];
 
-    constructor() {
+    constructor(context: vscode.ExtensionContext) {
         this.items = [
             new ManualCodeItem('long_function', false),
             new ManualCodeItem('god_object', false),
@@ -16,6 +16,7 @@ export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeIte
             new ManualCodeItem('switch_statement_abuser', false),
             new ManualCodeItem('excessive_flags', false),
         ];
+        this.context = context;
     }
 
     refresh(): void {
@@ -41,7 +42,7 @@ export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeIte
         this.refresh();
 
        
-        triggerCodeSmellDetection(item.label);
+        triggerCodeSmellDetection(item.label, this.context);
     }
 
 }
