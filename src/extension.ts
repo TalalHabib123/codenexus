@@ -16,6 +16,7 @@ import { ManualCodeProvider, ManualCodeItem } from './utils/ui/ManualCodeProvide
 import { createWebviewPanel,getWebviewContent} from './utils/ui/webviewast'; 
 import { refactor } from './codeSmells/refactor';
 import { establishWebSocketConnection } from './sockets/websockets';
+import { CodeSmellsProvider } from './utils/ui/problemsTab';
 
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
@@ -32,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left,100);
     context.subscriptions.push(statusBarItem);
    
-    require('./websockets').activate(context);
+   
     
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
 
@@ -187,12 +188,14 @@ export async function activate(context: vscode.ExtensionContext) {
             try {
                 // Send diagnostic to the backend
                 const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData);
-                RefreshDetection(context, folders, allFiles);
-                showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+               
+                
                 if (refactoredCode) {
-                    // Apply the refactored code
+                  
                     await applyRefactoredCode(editor, refactoredCode.refactored_code);
                     vscode.window.showInformationMessage("Code refactored successfully!");
+                    RefreshDetection(context, folders, allFiles);
+                    showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
                 }
@@ -224,17 +227,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
-    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-        console.log("__________________DEPENDENCE GRAPH __________________");
-        console.log(dependencyGraph);
-        console.log("_____________________________________________________");
         await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
         
-        context.workspaceState.update('processedFiles', allFiles);
-        context.workspaceState.update('fileData', fileData);
-        context.workspaceState.update('FileDetectionData', FileDetectionData);
-        context.workspaceState.update('folderStructureData', folderStructureData);
-        context.workspaceState.update('dependencyGraph', dependencyGraph);
 }
 
 
@@ -249,7 +243,7 @@ async function applyRefactoredCode(editor: vscode.TextEditor, refactoredCode: st
     await vscode.workspace.applyEdit(edit);
 }
 
-// A CodeActionProvider to attach icons to diagnostics
+
 class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
     public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix];
 
@@ -259,10 +253,27 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         context: vscode.CodeActionContext,
         token: vscode.CancellationToken
     ): vscode.CodeAction[] | undefined {
-        return context.diagnostics.map((diagnostic) => {
+        // Step 1: Get the selected diagnostic (e.g., the first in the list)
+        const selectedDiagnostic = context.diagnostics.find(
+            (diagnostic) => diagnostic.range.intersection(range) !== undefined
+        );
     
-
-            const action = new vscode.CodeAction("Fix this using codeNexus", vscode.CodeActionKind.QuickFix);
+        if (!selectedDiagnostic) {
+            return undefined; // No matching diagnostic
+        }
+    
+        // Step 2: Filter diagnostics by related `code` field
+        const relatedDiagnostics = context.diagnostics.filter(
+            (diagnostic) =>
+                diagnostic.code === selectedDiagnostic.code // Match only related diagnostics
+        );
+    
+        // Step 3: Create code actions for the filtered diagnostics
+        return relatedDiagnostics.map((diagnostic) => {
+            const action = new vscode.CodeAction(
+                "Fix this using codeNexus",
+                vscode.CodeActionKind.QuickFix
+            );
             action.command = {
                 command: "extension.refactorProblem",
                 title: "Fix this using codeNexus",
@@ -273,6 +284,7 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
             return action;
         });
     }
+    
 
 
 }
@@ -287,32 +299,7 @@ export function deactivate() {
 
 
 
-class CodeSmellsProvider implements vscode.TreeDataProvider<CodeSmellItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<CodeSmellItem | undefined | void> = new vscode.EventEmitter<CodeSmellItem | undefined | void>();
-    readonly onDidChangeTreeData: vscode.Event<CodeSmellItem | undefined | void> = this._onDidChangeTreeData.event;
 
-    refresh(): void {
-        this._onDidChangeTreeData.fire();
-    }
-
-    getTreeItem(element: CodeSmellItem): vscode.TreeItem {
-        return element;
-    }
-
-    getChildren(element?: CodeSmellItem): Thenable<CodeSmellItem[]> {
-        if (element) {
-            return Promise.resolve([]);
-        } else {
-            return Promise.resolve(Array.from(detectedCodeSmells).map(smell => new CodeSmellItem(smell)));
-        }
-    }
-}
-
-class CodeSmellItem extends vscode.TreeItem {
-    constructor(public readonly label: string) {
-        super(label, vscode.TreeItemCollapsibleState.None);
-    }
-}
 
 export function triggerCodeSmellDetection(
     codeSmell: string
