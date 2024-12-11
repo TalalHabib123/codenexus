@@ -116,8 +116,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // context.workspaceState.update('folderStructureData', folderStructureData);
     // Till Here
 
-    // dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    // context.workspaceState.update('dependencyGraph', dependencyGraph);
+    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    context.workspaceState.update('dependencyGraph', dependencyGraph);
 
     console.log("__________________DEPENDENCE GRAPH __________________");
     console.log(dependencyGraph);
@@ -193,8 +193,10 @@ export async function activate(context: vscode.ExtensionContext) {
                   
                     await applyRefactoredCode(editor, refactoredCode.refactored_code);
                     vscode.window.showInformationMessage("Code refactored successfully!");
+
                     RefreshDetection(context, folders, allFiles);
-                    showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+                    removeDiagnostic(filePath, diagnostic);
+                   
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
                 }
@@ -230,8 +232,34 @@ async function RefreshDetection(context: vscode.ExtensionContext, folders: strin
         
 }
 
+function removeDiagnostic(filePath: string, diagnostic: vscode.Diagnostic): void {
+    // Convert filePath string to vscode.Uri
+    const uri = vscode.Uri.file(filePath);
 
+    // Retrieve diagnostics for the given URI
+    const diagnostics = diagnosticCollection.get(uri);
+    if (!diagnostics) {
+        console.warn(`No diagnostics found for file: ${filePath}`);
+        return;
+    }
 
+    // Find the index of the diagnostic to remove
+    const index = diagnostics.findIndex(
+        (diag) => diag.message === diagnostic.message && diag.range.isEqual(diagnostic.range)
+    );
+
+    if (index !== -1) {
+        // Create a new array excluding the diagnostic to remove
+        const updatedDiagnostics = diagnostics.filter((_, i) => i !== index);
+
+        // Update the diagnostic collection with the new array
+        diagnosticCollection.set(uri, updatedDiagnostics);
+
+        vscode.window.showInformationMessage(`Diagnostic for "${diagnostic.message}" removed.`);
+    } else {
+        console.warn("No matching diagnostic found to remove.");
+    }
+}
 // Function to replace the entire content of the file with refactored code
 async function applyRefactoredCode(editor: vscode.TextEditor, refactoredCode: string) {
     const edit = new vscode.WorkspaceEdit();
@@ -243,7 +271,6 @@ async function applyRefactoredCode(editor: vscode.TextEditor, refactoredCode: st
     await vscode.workspace.applyEdit(edit);
 }
 
-
 class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
     public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix];
 
@@ -253,42 +280,46 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
         context: vscode.CodeActionContext,
         token: vscode.CancellationToken
     ): vscode.CodeAction[] | undefined {
-        // Step 1: Get the selected diagnostic (e.g., the first in the list)
-        const selectedDiagnostic = context.diagnostics.find(
+        // Filter diagnostics that match the selected range
+        const matchingDiagnostics = context.diagnostics.filter(
             (diagnostic) => diagnostic.range.intersection(range) !== undefined
         );
-    
-        if (!selectedDiagnostic) {
-            return undefined; // No matching diagnostic
+
+        if (matchingDiagnostics.length === 0) {
+            return undefined; // No relevant diagnostics found
         }
-    
-        // Step 2: Filter diagnostics by related `code` field
-        const relatedDiagnostics = context.diagnostics.filter(
-            (diagnostic) =>
-                diagnostic.code === selectedDiagnostic.code // Match only related diagnostics
-        );
-    
-        // Step 3: Create code actions for the filtered diagnostics
-        return relatedDiagnostics.map((diagnostic) => {
-            const action = new vscode.CodeAction(
-                "Fix this using codeNexus",
-                vscode.CodeActionKind.QuickFix
-            );
+
+                // Map filtered diagnostics to specific code actions
+        return matchingDiagnostics.map((diagnostic) => {
+            console.log("__________________DIAGNOSTIC Starts here__________________");
+            console.log("Diagnostic Range:", diagnostic.range);
+            console.log("Diagnostic Code:", diagnostic.code);
+            console.log("Diagnostic Message:", diagnostic.message);
+            console.log("_____________________________________________________");
+        
+            // Create a descriptive title for the Code Action using template literals
+            const actionTitle = `Fix "${diagnostic.message}" using codeNexus`;
+        
+            // Initialize the Code Action with the dynamic title
+            const action = new vscode.CodeAction(actionTitle, vscode.CodeActionKind.QuickFix);
+        
+            // Assign the command to be execruted when the Code Action is selected
             action.command = {
                 command: "extension.refactorProblem",
-                title: "Fix this using codeNexus",
-                arguments: [diagnostic],
+                title: "Fix this using codeNexus", // This title won't appear in the Quick Fix menu
+                arguments: [diagnostic], // Pass the specific diagnostic to the command
             };
+        
+            // Associate the diagnostic with this Code Action
             action.diagnostics = [diagnostic];
+        
+            // Optionally mark this as the preferred fix (if applicable)
             action.isPreferred = true;
+        
             return action;
         });
     }
-    
-
-
 }
-
 
 export function deactivate() {
     if (ws) {

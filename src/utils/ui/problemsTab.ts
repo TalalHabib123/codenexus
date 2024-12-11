@@ -287,18 +287,33 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
      
       if (Array.isArray(unreachable)) {
         unreachable.forEach((unreachableCode, index) => {
+        
+          const message = `${unreachableCode}`;
+       
+
+          // Regular expression to match "line" followed by a number
+          const regex = /line\s+(\d+)/i;
+          const match = message.match(regex);
+          let lineNumber = 0; // Initialize lineNumber
+          
+          if (match && match[1]) {
+              lineNumber = parseInt(match[1], 10); // Corrected assignment without type annotation
+          } else {
+              console.log("No line number found in the message.");
+          }
+          
+          // Ensure consistent casing: use 'lineNumber' instead of 'linenumber'
           const range = new vscode.Range(
-            new vscode.Position(unreachableCode.line_number-1, 0),
-            new vscode.Position(unreachableCode.line_number-1, 100)
+              new vscode.Position(lineNumber - 1, 0),
+              new vscode.Position(lineNumber - 1, 100)
           );
 
-          const message = `Unreachable code detected: ${unreachableCode}`;
           const newDiagnostic = new vscode.Diagnostic(
             range,
             message,
             vscode.DiagnosticSeverity.Warning
           );
-          detectedCodeSmells.add({ type: "Unreachable Code", filePath, startlineNumber:unreachableCode.line_number, endlineNumber: unreachableCode.line_number });
+          detectedCodeSmells.add({ type: "Unreachable Code", filePath, startlineNumber:lineNumber, endlineNumber: lineNumber });
          
           // Check for duplicate diagnostics
           const existingDiagnostic = diagnostics.find(
@@ -356,7 +371,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
             );
             const newDiagnostic = new vscode.Diagnostic(
               range,
-              `${funcName} was defined but never used`,
+              `${funcName}: Function was defined but never used`,
               vscode.DiagnosticSeverity.Warning
             );
             newDiagnostic.code= "Dead function"+index;
@@ -380,7 +395,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
             );
             const newDiagnostic = new vscode.Diagnostic(
               range,
-              `${globalVariable} was defined but never used`,
+              `${globalVariable}: Global Variable was defined but never used`,
               vscode.DiagnosticSeverity.Warning
             );
             newDiagnostic.code= "Dead Global Variables"+index;
@@ -461,7 +476,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
                   new vscode.Position(condition.line_number - 1, 100)
               );
       
-              const message = `Overly complex condition detected: ${condition.condition}`;
+              const message = `Overly complex condition detected.`;
               const newDiagnostic = new vscode.Diagnostic(
                   range,
                   message,

@@ -23,10 +23,8 @@ export const refactor = async (
     try {
         const message = diagnostic.message;
         console.log("Diagnostic message:", message);
-
         if (diagnostic.message.includes("Inconsistent naming convention")) {
             const dependencyData = await getDependencyData(dependencyGraph, filePath);
-            console.log("Dependency data:", dependencyData);
             const codeSmellData = FileDetectionData[filePath]?.naming_convention?.data;
 
             if (codeSmellData && "inconsistent_naming" in codeSmellData) {
@@ -34,10 +32,8 @@ export const refactor = async (
                 const target_convention = inconsistentNamingData?.reduce((prev, current) =>
                     current.type_count > prev.type_count ? current : prev
                 );
-                console.log("Target convention:", target_convention);
 
                 if (target_convention?.type) {
-                    console.log("Target convention:", target_convention.type);
                     const uri = vscode.Uri.file(filePath);
                     const fileData = await vscode.workspace.fs.readFile(uri);
                     const fileContent = new TextDecoder().decode(fileData);
@@ -49,56 +45,61 @@ export const refactor = async (
                     };
                     const response = await refactorNamingConvention(refactorRequest);
                     if (response.data.success) {
-                        console.log("Refactor successful:", response.data.refactored_code);
                         return response.data;
                     }
                 }
             }
-        } else if (diagnostic.message.includes("dead code")) {
+        } else if (diagnostic.message.includes("dead code") || diagnostic.message.includes("Function was defined but never used") || diagnostic.message.includes("Global Variable was defined but never used")) {
             const uri = vscode.Uri.file(filePath);
             const fileData = await vscode.workspace.fs.readFile(uri);
             let fileContent = new TextDecoder().decode(fileData);
-            //console.log("FileDetection", FileDetectionData[filePath].dead_code);
             const data = FileDetectionData[filePath]?.dead_code;
-            let updatedCode = fileContent;
+            let updatedCode: RefactorResponse = { success: false, refactored_code: fileContent };
             if (data && data.success) {
                 console.log("Dead Code data", data);
-                if ("class_details" in data && Array.isArray(data.class_details) && data.class_details.length > 0) {
-                    data.class_details.forEach(async (classDetail: any) => {
+                if ( diagnostic.message.includes("contains dead code") &&
+                    "class_details" in data && Array.isArray(data.class_details) && data.class_details.length > 0) {
+                    // data.class_details.forEach(async (classDetail: any) => {
+                        const className = diagnostic.message.split(" ").shift() || "";
+                        const classDetail = data.class_details.find((classDetail: any) => classDetail.class_name === className);
+
                         if (!classDetail.has_instance){
                             const refactorRequest = {
-                                code: fileContent,
+                                code: updatedCode.refactored_code,
                                 entity_name: classDetail.class_name,
                                 entity_type: "class",
                                 dependencies: []
                             };
                             const response = await refactorDeadCode(refactorRequest);
-                            updatedCode = response?.data.refactored_code || fileContent;
-                          }});
+                            updatedCode = response?.data || updatedCode;
+                          }
+                        // });
                         }
-                if ("function_names" in data && Array.isArray(data.function_names) && data.function_names.length > 0) {
-                    data.function_names.forEach(async (name: any) => {
+                if (diagnostic.message.includes("Function was defined but never used") &&
+                    "function_names" in data && Array.isArray(data.function_names) && data.function_names.length > 0) {
+                        const name = diagnostic.message.split(" ").shift() || "";
                         const refactorRequest = {
-                            code: updatedCode,
+                            code: updatedCode.refactored_code,
                             entity_name: name,
                             entity_type: "function",
                             dependencies: []
                         };
                         const response = await refactorDeadCode(refactorRequest);
-                        updatedCode = response?.data.refactored_code || updatedCode;
-                    });
+                        updatedCode = response?.data || updatedCode;
                 }
-                if ("global_variables" in data && Array.isArray(data.global_variables) && data.global_variables.length > 0) {
-                    data.global_variables.forEach(async (name: any) => {
+                if ( diagnostic.message.includes("Global Variable was defined but never used") &&
+                    "global_variables" in data && Array.isArray(data.global_variables) && data.global_variables.length > 0) {
+                    // data.global_variables.forEach(async (name: any) => {
+                        const name = diagnostic.message.split(" ").shift() || "";
                         const refactorRequest = {
-                            code: updatedCode,
+                            code: updatedCode.refactored_code,
                             entity_name: name,
                             entity_type: "variable",
                             dependencies: []
                         };
                         const response = await refactorDeadCode(refactorRequest);
-                        updatedCode = response?.data.refactored_code || updatedCode;
-                    });
+                        updatedCode = response?.data || updatedCode;
+                    // });
                 }
                 if ("imports" in data && 
                     typeof data.imports === "object" &&  
@@ -108,15 +109,16 @@ export const refactor = async (
                     data.imports.dead_imports.length > 0) {
                     data.imports.dead_imports.forEach(async (name: any) => {
                         const refactorRequest = {
-                            code: updatedCode,
+                            code: updatedCode.refactored_code,
                             entity_name: name,
                             entity_type: "import",
                             dependencies: []
                         };
                         const response = await refactorDeadCode(refactorRequest);
-                        updatedCode = response?.data.refactored_code || updatedCode;
+                        updatedCode = response?.data || updatedCode;
                     });
                 }
+                return updatedCode;
             }
         }else if (diagnostic.message.includes("Unreachable code")) {
             const uri = vscode.Uri.file(filePath);

@@ -41,7 +41,7 @@
         },
         {
           "id": "manualCodeView",
-          "name": "Manual Code Smells"
+          "name": "Trigger Code Analysis"
         }
       ]
     },
@@ -64,7 +64,7 @@
       },
       {
         "command": "manualCodeView.toggleTick",
-        "title": "Toggle Tick/Cross"
+        "title": "Check"
       },
       {
         "command": "extension.refactorProblem",
@@ -76,7 +76,7 @@
       },
       {
         "command": "codenexus.showAST",
-        "title": "Show AST Visualization"
+        "title": "Show Depdency Visualization"
       }
     ],
     "configuration": {
