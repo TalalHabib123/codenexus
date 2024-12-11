@@ -1,13 +1,17 @@
 import { FileNode, DependentNode } from '../types/graph';
-import { DetectionResponse } from '../types/api';
-import { Dependency, UnreachableCodeRequest } from "../types/refactor_models";
+import { DeadCodeResponse, DetectionResponse } from '../types/api';
+import { Dependency, 
+        UnreachableCodeRequest,
+        MagicNumberRefactorRequest,
+        UnusedVariablesRefactorRequest, } from "../types/refactor_models";
 import * as vscode from 'vscode';
 
 import { RefactorResponse } from '../types/refactor_models';
 import {refactorNamingConvention} from '../utils/refactor_api/naming_convention_api';
 import { refactorDeadCode } from '../utils/refactor_api/dead_code_api';
 import { sendFileForUnreachableCodeAnalysis } from '../utils/refactor_api/unreachable_code_api';
-import { parse } from 'path';
+import { refactorMagicNumbers } from '../utils/refactor_api/magic_number_api';
+import { refactorUnusedVars } from '../utils/refactor_api/unused_var_api';
 
 
 export const refactor = async (
@@ -56,28 +60,63 @@ export const refactor = async (
             let fileContent = new TextDecoder().decode(fileData);
             //console.log("FileDetection", FileDetectionData[filePath].dead_code);
             const data = FileDetectionData[filePath]?.dead_code;
-            console.log("data",data);
-           
+            let updatedCode = fileContent;
             if (data && data.success) {
                 console.log("Dead Code data", data);
-               
-                    // Process dead classes
-    // if (data.class_details && data.class_details.length > 0) {
-    //     for (const classDetail of data.class_details) {
-    //         if (!classDetail.has_instance) {
-    //             const refactorRequest = {
-    //                 code: fileContent,
-    //                 entity_name: classDetail.class_name,
-    //                 entity_type: 'class',
-    //                 // Include dependencies if necessary
-    //             };
-    //             const refactoredCode = await refactorDeadCode(filePath, refactorRequest);
-    //             if (refactoredCode) {
-    //                 fileContent = refactoredCode;
-    //             }
-    //         }
-    //     }
-    // }
+                if ("class_details" in data && Array.isArray(data.class_details) && data.class_details.length > 0) {
+                    data.class_details.forEach(async (classDetail: any) => {
+                        if (!classDetail.has_instance){
+                            const refactorRequest = {
+                                code: fileContent,
+                                entity_name: classDetail.class_name,
+                                entity_type: "class",
+                                dependencies: []
+                            };
+                            const response = await refactorDeadCode(refactorRequest);
+                            updatedCode = response?.data.refactored_code || fileContent;
+                          }});
+                        }
+                if ("function_names" in data && Array.isArray(data.function_names) && data.function_names.length > 0) {
+                    data.function_names.forEach(async (name: any) => {
+                        const refactorRequest = {
+                            code: updatedCode,
+                            entity_name: name,
+                            entity_type: "function",
+                            dependencies: []
+                        };
+                        const response = await refactorDeadCode(refactorRequest);
+                        updatedCode = response?.data.refactored_code || updatedCode;
+                    });
+                }
+                if ("global_variables" in data && Array.isArray(data.global_variables) && data.global_variables.length > 0) {
+                    data.global_variables.forEach(async (name: any) => {
+                        const refactorRequest = {
+                            code: updatedCode,
+                            entity_name: name,
+                            entity_type: "variable",
+                            dependencies: []
+                        };
+                        const response = await refactorDeadCode(refactorRequest);
+                        updatedCode = response?.data.refactored_code || updatedCode;
+                    });
+                }
+                if ("imports" in data && 
+                    typeof data.imports === "object" &&  
+                    data.imports !== null &&
+                    "dead_imports" in data.imports && 
+                    Array.isArray(data.imports.dead_imports) && 
+                    data.imports.dead_imports.length > 0) {
+                    data.imports.dead_imports.forEach(async (name: any) => {
+                        const refactorRequest = {
+                            code: updatedCode,
+                            entity_name: name,
+                            entity_type: "import",
+                            dependencies: []
+                        };
+                        const response = await refactorDeadCode(refactorRequest);
+                        updatedCode = response?.data.refactored_code || updatedCode;
+                    });
+                }
             }
         }else if (diagnostic.message.includes("Unreachable code")) {
             const uri = vscode.Uri.file(filePath);
@@ -101,14 +140,49 @@ export const refactor = async (
                 console.log("Refactored code", refactoredCode);
                 return refactoredCode || undefined;
             }
-                   
-        
-           
             
         } else if (diagnostic.message.includes("Magic number")) {
             // Refactor magic numbers
+            const MagicNumber = diagnostic.message.split(" ").pop();
+            const magicNumber = parseInt(MagicNumber || "", 10);
+            const lineNumber = diagnostic.range.start.line;
+            console.log("Magic number:", magicNumber);
+            console.log("Line number:", lineNumber);
+            console.log("line number type: ", typeof(lineNumber));
+            console.log("magic_number type", typeof(magicNumber));
+            const magic_numbers = [
+                {
+                    magic_number: magicNumber,
+                    line_number: lineNumber,
+                },
+            ];
+            const uri = vscode.Uri.file(filePath);
+            const fileData = await vscode.workspace.fs.readFile(uri);
+            const fileContent = new TextDecoder().decode(fileData);
+
+            const data: MagicNumberRefactorRequest = {
+                code: fileContent,
+                magic_numbers: magic_numbers,
+                dependencies: []
+            };  
+            const response = await refactorMagicNumbers(data);
+            return response.data;
+
         } else if (diagnostic.message.includes("Unused variable")) {
             // Refactor unused variables
+            const uri = vscode.Uri.file(filePath);
+            const fileData = await vscode.workspace.fs.readFile(uri);
+            const fileContent = new TextDecoder().decode(fileData);
+
+            const unused_variables = diagnostic.message.split(" ").pop() || "";
+            console.log("Unused variable:", unused_variables);
+            const data: UnusedVariablesRefactorRequest = {
+                code: fileContent,
+                unused_variables: [unused_variables],
+                dependencies: [],
+            };
+            const response = await refactorUnusedVars(data);
+            return response.data; 
         }
 
     } catch (e) {

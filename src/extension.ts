@@ -89,24 +89,24 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     // // Comment From Here
-    const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
-        sendFileToServer(filePath, content, fileData)
-    );
-    await Promise.all(fileSendPromises);
+    // const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
+    //     sendFileToServer(filePath, content, fileData)
+    // );
+    // await Promise.all(fileSendPromises);
 
-    dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-    console.log("__________________DEPENDENCE GRAPH __________________")
-    console.log(dependencyGraph);
-    console.log("_____________________________________________________")
-    // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
+    // dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+    // console.log("__________________DEPENDENCE GRAPH __________________")
+    // console.log(dependencyGraph);
+    // console.log("_____________________________________________________")
+    // // establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', 'god_object');
 
-    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
-    // Test Connection
+    // await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    // // Test Connection
 
-    context.workspaceState.update('processedFiles', allFiles);
-    context.workspaceState.update('fileData', fileData);
-    context.workspaceState.update('FileDetectionData', FileDetectionData);
-    context.workspaceState.update('folderStructureData', folderStructureData);
+    // context.workspaceState.update('processedFiles', allFiles);
+    // context.workspaceState.update('fileData', fileData);
+    // context.workspaceState.update('FileDetectionData', FileDetectionData);
+    // context.workspaceState.update('folderStructureData', folderStructureData);
     // Till Here
 
     dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
@@ -304,12 +304,10 @@ export function triggerCodeSmellDetection(
 ): void {
    
   establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell);
-    console.log("__________________FILE DETECTION DATA __________________");
-    console.log(FileDetectionData);
-    console.log("_____________________________________________________");
+    
 
      // Showing detected code smells in the Problems tab
-     console.log("__________________FILE DETECTION DATA __________________");   
+     console.log("__________________FILE DETECTION DATA in trigger __________________");   
      console.log(FileDetectionData);
         console.log("_____________________________________________________");
      showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);

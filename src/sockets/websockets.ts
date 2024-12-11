@@ -51,7 +51,7 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
         ws.on('message', (data: string) => {
             try {
                 const message: UserTriggeredDetectionResponse = JSON.parse(data);
-                console.log('Received message:', message);
+                //console.log('Received message:', message);
                 if (message.task_status === 'started') {
                     statusBarItem.text = "$(sync~spin) Analysis in progress...";
                     statusBarItem.show();
