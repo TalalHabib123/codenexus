@@ -153,6 +153,29 @@ export const refactor = async (
                         updatedCode = response?.data.refactored_code || updatedCode;
                     });
                 }
+
+                const newRefactrData: RefactoringData = {
+                    orginal_code: fileContent,
+                    refactored_code: updatedCode,
+                    refactoring_type: "Dead Code",
+                    time: new Date(),
+                    cascading_refactor: false,
+                    job_id: randomUUID(),
+                    ai_based: false,
+                    files_affected: [],
+                    outdated: false,
+                    success: true,
+                    error: "",
+                };
+                if (!refactorData[filePath]) {
+                    refactorData[filePath] = [];
+                }
+                for (let i = 0; i < refactorData[filePath].length; i++) {
+                    if (refactorData[filePath][i].refactoring_type === "Dead Code") {
+                        refactorData[filePath][i].outdated = true;
+                    }
+                }
+                refactorData[filePath].push(newRefactrData);
             }
         }else if (diagnostic.message.includes("Unreachable code")) {
             const uri = vscode.Uri.file(filePath);
