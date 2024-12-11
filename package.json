@@ -14,7 +14,8 @@
     "*",
     "onCommand:extension.learnMore",
     "onCommand:extension.refactorProblem",
-    "onCommand:codenexus.showAST"
+    "onCommand:codenexus.showAST",
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {

@@ -7,17 +7,21 @@ let statusBarItem: vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
     // Create status bar if it doesn't exist
-    if (!statusBarItem) {
-        statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-        context.subscriptions.push(statusBarItem);
-    }
-    
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+    context.subscriptions.push(statusBarItem);
 }
+export function deactivate() {
+    if (statusBarItem) {
+        statusBarItem.dispose();
+    }
+}
+
 // Helper function to ensure status bar exists
 function getStatusBar(): vscode.StatusBarItem {
     if (!statusBarItem) {
-        statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+        statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     }
+    statusBarItem.show(); // Always show when getting status bar
     return statusBarItem;
 }
 
@@ -60,14 +64,16 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
 
         ws.on('message', (data: string) => {
             try {
+                const status = getStatusBar();
                 const message: UserTriggeredDetectionResponse = JSON.parse(data);
                 //console.log('Received message:', message);
                 if (message.task_status === 'started') {
-                    statusBarItem.text = "$(sync~spin) Analysis in progress...";
-                    statusBarItem.show();
+                    status.text = "$(sync~spin) Analysis in progress...";
+                    status.show();
                 }
                 if (message.task_status === 'success') {
-                    statusBarItem.text = "$(check) Analysis complete:Data processed";
+                   status.text = "$(check) Analysis complete:Data processed";
+                   status.show();
                     vscode.window.showInformationMessage(`Task completed`);
                     if (message.processed_data)
                     {
@@ -99,32 +105,34 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
                         }
                     }
                     console.log('FileDetectionData:', FileDetectionData);
-                    // Clear status after 3 seconds
+                    
                 setTimeout(() => {
-                    statusBarItem.hide();
+                   status.hide();
                 }, 3000);
                 }
                 else if (message.task_status === 'task_failed') {//loading state error
-                    statusBarItem.text = "$(error) Analysis failed";
+                    status.text = "$(error) Analysis failed";
+                    status.show();
                     vscode.window.showErrorMessage(`Task failed: ${message.error}`);
                     setTimeout(() => {
-                        statusBarItem.hide();
+                       status.hide();
                     }, 3000);
                 }
                 else if (message.task_status === 'task_started') {//loading state
-                    statusBarItem.text = "$(error) Task Started";
+                    status.text = "$(error) Task Started";
                     vscode.window.showInformationMessage(`Task started: ${message.correlation_id}`);
                 }
                 else {
-                    statusBarItem.text = "$(error) Task failed";
+                    status.text = "$(error) Task failed";
                     vscode.window.showErrorMessage(`Task failed: ${message.task_status}`);
-                    statusBarItem.hide();//errorloading state stopped
+                    status.hide();//errorloading state stopped
                 }
             } catch (error) {
-                statusBarItem.text = "$(error) Message parsing failed";
-                statusBarItem.show();
+                const status = getStatusBar();
+                status.text = "$(error) Message parsing failed";
+                status.show();
                 setTimeout(() => {
-                    statusBarItem.hide();
+                    status.hide();
                 }, 3000);
                 if (error instanceof Error) {
                     vscode.window.showErrorMessage(`WebSocket error: ${error.message}`);
