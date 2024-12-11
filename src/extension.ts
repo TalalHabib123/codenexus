@@ -191,7 +191,9 @@ export async function activate(context: vscode.ExtensionContext) {
             try {
                 // Send diagnostic to the backend
                 const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData, refactorData);
-
+                console.log("__________________REFRACTORED CODE __________________");
+                console.log(refactoredCode);
+                console.log("_____________________________________________________");
 
                 if (refactoredCode) {
 
@@ -298,11 +300,7 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
 
                 // Map filtered diagnostics to specific code actions
         return matchingDiagnostics.map((diagnostic) => {
-            console.log("__________________DIAGNOSTIC Starts here__________________");
-            console.log("Diagnostic Range:", diagnostic.range);
-            console.log("Diagnostic Code:", diagnostic.code);
-            console.log("Diagnostic Message:", diagnostic.message);
-            console.log("_____________________________________________________");
+            
         
             // Create a descriptive title for the Code Action using template literals
             const actionTitle = `Fix "${diagnostic.message}" using codeNexus`;
