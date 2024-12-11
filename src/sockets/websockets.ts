@@ -4,6 +4,7 @@ import { CodeResponse, DetectionResponse, UserTriggeredDetectionResponse, UserTr
 import { taskDataGenerator } from './detections/generate_task_data';
 import { detectionHelper } from './detections/detection_helper';
 import { showCodeSmellsInProblemsTab } from '../utils/ui/problemsTab';
+import { userTriggeredcodesmell } from '../utils/ui/problemsTab';
 let statusBarItem: vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -44,7 +45,8 @@ function sendMessage(
     }));
 }
 
-function establishWebSocketConnection(ws: WebSocket | null = null, 
+function establishWebSocketConnection(codeSmell: string,
+    ws: WebSocket | null = null, 
     fileData: { [key: string]: CodeResponse },
     FileDetectionData: { [key: string]: DetectionResponse } ,
     taskType: string,
@@ -107,7 +109,8 @@ function establishWebSocketConnection(ws: WebSocket | null = null,
                             console.log("__________________FILE DETECTION DATA in trigger __________________");   
                             console.log(FileDetectionData);
                             console.log("_____________________________________________________");
-                            showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+                            // showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+                            userTriggeredcodesmell(codeSmell, FileDetectionData, diagnosticCollection);
                             vscode.window.showInformationMessage(`Problems updated for: ${taskJob}`);
                             context.workspaceState.update('FileDetectionData', FileDetectionData);
                         }

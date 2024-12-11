@@ -18,6 +18,7 @@ import { refactor } from './codeSmells/refactor';
 import { establishWebSocketConnection } from './sockets/websockets';
 import { CodeSmellsProvider } from './utils/ui/problemsTab';
 import { RefactoringData } from './types/refactor_models';
+import { userTriggeredcodesmell } from './utils/ui/problemsTab';
 
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
@@ -34,9 +35,10 @@ export async function activate(context: vscode.ExtensionContext) {
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     context.subscriptions.push(statusBarItem);
-
-
-
+   statusBarItem.text="CodeNexus intillaizing";
+   statusBarItem.show();
+   
+    
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
 
     fileData = context.workspaceState.get<{ [key: string]: CodeResponse }>('fileData', {});
@@ -342,14 +344,12 @@ export function triggerCodeSmellDetection(
     context: vscode.ExtensionContext
 ): void {
 
-    establishWebSocketConnection(ws, fileData, FileDetectionData, 'detection', codeSmell, diagnosticCollection, context);
-
-    // if (! (!ws || ws.readyState !== WebSocket.OPEN)) {
-    //     console.log("__________________FILE DETECTION DATA in trigger __________________");   
-    //     console.log(FileDetectionData);
-    //         console.log("_____________________________________________________");
-    //     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
-
-    //     vscode.window.showInformationMessage(`Problems updated for: ${codeSmell}`);
-    // }
+    establishWebSocketConnection(codeSmell, ws, fileData, FileDetectionData, 'detection', codeSmell, diagnosticCollection, context);
+    console.log("HELLLOO ME HERE");
+    if (! (!ws || ws.readyState !== WebSocket.OPEN)) {
+        console.log("websocket state: ", ws.readyState);
+        console.log("__________________FILE DETECTION DATA in trigger __________________");   
+        console.log(FileDetectionData);
+        console.log("_____________________________________________________");
+    }
 }

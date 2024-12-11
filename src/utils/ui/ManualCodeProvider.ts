@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import {triggerCodeSmellDetection} from '../../extension'
+import { showCodeSmellsInProblemsTab } from './problemsTab';
 export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<ManualCodeItem | undefined | void> = new vscode.EventEmitter<ManualCodeItem | undefined | void>();
     readonly onDidChangeTreeData: vscode.Event<ManualCodeItem | undefined | void> = this._onDidChangeTreeData.event;
@@ -11,7 +12,7 @@ export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeIte
             new ManualCodeItem('long_function', false),
             new ManualCodeItem('god_object', false),
             new ManualCodeItem('feature_envy', false),
-            new ManualCodeItem('nappropriate_intimacy', false),
+            new ManualCodeItem('inappropriate_intimacy', false),
             new ManualCodeItem('middle_man', false),
             new ManualCodeItem('switch_statement_abuser', false),
             new ManualCodeItem('excessive_flags', false),
@@ -36,16 +37,39 @@ export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeIte
     }
 
     toggleCodeSmell(item: ManualCodeItem): void {
-   
+        // Toggle the ticked state and update the icon
         item.ticked = !item.ticked;
         item.iconPath = new vscode.ThemeIcon(item.ticked ? 'check' : 'close');
         this.refresh();
-
-       
-        triggerCodeSmellDetection(item.label, this.context);
+    
+        if (item.ticked) {
+            // Trigger code smell detection if the item is ticked
+            triggerCodeSmellDetection(item.label, this.context);
+        } else {
+            // Handle unticking by fetching FileDetectionData
+            const FileDetectionData = this.context.workspaceState.get('FileDetectionData', {});
+            if (FileDetectionData) {
+                const diagnosticCollection = this.context.subscriptions.find(
+                    (sub): sub is vscode.DiagnosticCollection => 'set' in sub && 'delete' in sub && 'clear' in sub
+                );
+    
+                if (diagnosticCollection) {
+                    showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+                } else {
+                    console.warn("No diagnostic collection found.");
+                }
+            } else {
+                console.warn("No FileDetectionData found in workspace state.");
+            }
+        }
+    
+        // Log the item label for debugging
+        console.log(item.label);
     }
-
+    
 }
+
+
 export class ManualCodeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
