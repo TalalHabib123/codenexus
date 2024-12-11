@@ -8,17 +8,16 @@ export function showProblemsTab() {
   vscode.commands.executeCommand("workbench.action.problems.focus");
 }
 
-
 type CodeSmellDetail = {
-    type: string;      
-    filePath: string;    
-    startlineNumber: number;  
-    endlineNumber: number;      
+  type: string;
+  filePath: string;
+  startlineNumber: number;
+  endlineNumber: number;
 };
 
 // Initialize the Set
-export let detectedCodeSmells: Set<CodeSmellDetail> = new Set<CodeSmellDetail>();
-
+export let detectedCodeSmells: Set<CodeSmellDetail> =
+  new Set<CodeSmellDetail>();
 
 export function showCodeSmellsInProblemsTab(
   FileDetectionData: { [key: string]: DetectionResponse },
@@ -26,52 +25,13 @@ export function showCodeSmellsInProblemsTab(
 ) {
   diagnosticCollection.clear();
 
-  
-
   for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
     const diagnostics: vscode.Diagnostic[] = [];
-  //   if (
-  //     detectionData.Unuse?.success &&
-  //     detectionData.long_parameter_list.data &&
-  //     "long_parameter_list" in detectionData.long_parameter_list.data
-  //   ) {
-  //     detectedCodeSmells.add("Long Parameter List");
-  //     const longparameter =
-  //       detectionData.long_parameter_list.data.long_parameter_list;
-  //     if (longparameter) {
-  //       longparameter.forEach((longparameterobj) => {
-  //         if (longparameterobj.long_parameter === true) {
-  //           const range = new vscode.Range(
-  //             new vscode.Position(longparameterobj.line_number - 1, 0),
-  //             new vscode.Position(longparameterobj.line_number - 1, 100)
-  //           );
-  //           const message = `Long parameter list detected: ${longparameterobj.function_name} with ${longparameterobj.long_parameter_count} parameters`;
-  //           const newDiagnostic = new vscode.Diagnostic(
-  //             range,
-  //             message,
-  //             vscode.DiagnosticSeverity.Warning
-  //           );
-
-  //           // Check for duplicate diagnostics
-  //           const existingDiagnostic = diagnostics.find(
-  //             (diag) =>
-  //               diag.range.isEqual(newDiagnostic.range) &&
-  //               diag.message === newDiagnostic.message
-  //           );
-
-  //           if (!existingDiagnostic) {
-  //             diagnostics.push(newDiagnostic);
-  //           }
-  //         }
-  //       });
-  //     }
-  //   }
     if (
       detectionData.long_parameter_list?.success &&
       detectionData.long_parameter_list.data &&
       "long_parameter_list" in detectionData.long_parameter_list.data
     ) {
-     
       const longparameter =
         detectionData.long_parameter_list.data.long_parameter_list;
       if (longparameter) {
@@ -85,10 +45,14 @@ export function showCodeSmellsInProblemsTab(
             const newDiagnostic = new vscode.Diagnostic(
               range,
               message,
-              vscode.DiagnosticSeverity.Warning,
-            
+              vscode.DiagnosticSeverity.Warning
             );
-            detectedCodeSmells.add({ type: "Long Parameter List", filePath, startlineNumber: longparameterobj.line_number , endlineNumber: longparameterobj.line_number });
+            detectedCodeSmells.add({
+              type: "Long Parameter List",
+              filePath,
+              startlineNumber: longparameterobj.line_number,
+              endlineNumber: longparameterobj.line_number,
+            });
             // Check for duplicate diagnostics
             const existingDiagnostic = diagnostics.find(
               (diag) =>
@@ -109,7 +73,6 @@ export function showCodeSmellsInProblemsTab(
       detectionData.magic_numbers.data &&
       "magic_numbers" in detectionData.magic_numbers.data
     ) {
-      
       const magicNumber = detectionData.magic_numbers.data.magic_numbers;
       if (magicNumber) {
         magicNumber.forEach((magicNumberobj) => {
@@ -123,7 +86,12 @@ export function showCodeSmellsInProblemsTab(
             message,
             vscode.DiagnosticSeverity.Warning
           );
-          detectedCodeSmells.add({ type: "Magic Number", filePath, startlineNumber: magicNumberobj.line_number,endlineNumber: magicNumberobj.line_number });
+          detectedCodeSmells.add({
+            type: "Magic Number",
+            filePath,
+            startlineNumber: magicNumberobj.line_number,
+            endlineNumber: magicNumberobj.line_number,
+          });
           // Check for duplicate diagnostics
           const existingDiagnostic = diagnostics.find(
             (diag) =>
@@ -143,38 +111,41 @@ export function showCodeSmellsInProblemsTab(
       detectionData.naming_convention.data &&
       "inconsistent_naming" in detectionData.naming_convention.data
     ) {
-      
+      const namingConven =
+        detectionData.naming_convention.data.inconsistent_naming;
 
-const namingConven = detectionData.naming_convention.data.inconsistent_naming;
+      if (namingConven) {
+        // Filter out naming types with 0 instances
+        const activeNamingTypes = namingConven.filter(
+          (namingConvenobj) => namingConvenobj.type_count > 0
+        );
 
-if (namingConven) {
-  // Filter out naming types with 0 instances
-  const activeNamingTypes = namingConven.filter(
-    (namingConvenobj) => namingConvenobj.type_count > 0
-  );
+        if (activeNamingTypes.length > 1) {
+          // Case 2: Two or more types have more than 0 instances
+          const range = new vscode.Range(
+            new vscode.Position(0, 0), // Adjust the range as needed
+            new vscode.Position(0, 100)
+          );
 
-  if (activeNamingTypes.length > 1) {
-    // Case 2: Two or more types have more than 0 instances
-    const range = new vscode.Range(
-      new vscode.Position(0, 0), // Adjust the range as needed
-      new vscode.Position(0, 100)
-    );
-  
-    const message = `Inconsistent naming convention detected in the code.`;
-    const diagnostic=  new vscode.Diagnostic(
-      range,
-      message,
-      vscode.DiagnosticSeverity.Warning,
-      
-    );
-    diagnostic.code= "Inconsistent Naming convention";
-    diagnostics.push(diagnostic);
-  } else if (activeNamingTypes.length === 1) {
-    // Case 1: Only one naming type with > 0 instances, do not push anything
-    // No action needed
-  }
-}
-detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, startlineNumber: 0 , endlineNumber: 0 }); 
+          const message = `Inconsistent naming convention detected in the code.`;
+          const diagnostic = new vscode.Diagnostic(
+            range,
+            message,
+            vscode.DiagnosticSeverity.Warning
+          );
+          diagnostic.code = "Inconsistent Naming convention";
+          diagnostics.push(diagnostic);
+        } else if (activeNamingTypes.length === 1) {
+          // Case 1: Only one naming type with > 0 instances, do not push anything
+          // No action needed
+        }
+      }
+      detectedCodeSmells.add({
+        type: "Inconsistent Naming convention",
+        filePath,
+        startlineNumber: 0,
+        endlineNumber: 0,
+      });
     }
 
     //Duplicated code
@@ -184,7 +155,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
       "duplicate_code" in detectionData.duplicated_code.data
     ) {
       const duplicatedCode = detectionData.duplicated_code.data.duplicate_code;
-     
+
       if (duplicatedCode) {
         duplicatedCode.forEach((duplicatedCodeobj) => {
           duplicatedCodeobj.duplicates.forEach((obj) => {
@@ -198,7 +169,12 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
               message,
               vscode.DiagnosticSeverity.Warning
             );
-            detectedCodeSmells.add({ type: "Duplicated code", filePath, startlineNumber:obj.start_line , endlineNumber: obj.end_line });
+            detectedCodeSmells.add({
+              type: "Duplicated code",
+              filePath,
+              startlineNumber: obj.start_line,
+              endlineNumber: obj.end_line,
+            });
             // Check for duplicate diagnostics
             const existingDiagnostic = diagnostics.find(
               (diag) =>
@@ -219,7 +195,6 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
       detectionData.global_conflict &&
       "conflicts_report" in detectionData.global_conflict
     ) {
-     
       const globalVariable = detectionData.global_conflict.conflicts_report;
       if (Array.isArray(globalVariable)) {
         globalVariable.forEach(
@@ -238,7 +213,12 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
                 )
               )
             );
-            detectedCodeSmells.add({ type: "Global Variale Conflict", filePath, startlineNumber:0, endlineNumber: 0 });
+            detectedCodeSmells.add({
+              type: "Global Variale Conflict",
+              filePath,
+              startlineNumber: 0,
+              endlineNumber: 0,
+            });
           }
         );
       }
@@ -249,7 +229,6 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
       detectionData.unused_variables.data &&
       "unused_variables" in detectionData.unused_variables.data
     ) {
-      
       const unusedVar = detectionData.unused_variables.data.unused_variables;
       if (unusedVar) {
         unusedVar.forEach((unusedVarobj) => {
@@ -263,7 +242,12 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
             message,
             vscode.DiagnosticSeverity.Warning
           );
-          detectedCodeSmells.add({ type: "Unused Variable", filePath, startlineNumber:unusedVarobj.line_number, endlineNumber: unusedVarobj.line_number });
+          detectedCodeSmells.add({
+            type: "Unused Variable",
+            filePath,
+            startlineNumber: unusedVarobj.line_number,
+            endlineNumber: unusedVarobj.line_number,
+          });
           // Check for duplicate diagnostics
           const existingDiagnostic = diagnostics.find(
             (diag) =>
@@ -284,12 +268,12 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
       "unreachable_code" in detectionData.unreachable_code
     ) {
       const unreachable = detectionData.unreachable_code.unreachable_code;
-     
+
       if (Array.isArray(unreachable)) {
         unreachable.forEach((unreachableCode, index) => {
           const range = new vscode.Range(
-            new vscode.Position(unreachableCode.line_number-1, 0),
-            new vscode.Position(unreachableCode.line_number-1, 100)
+            new vscode.Position(unreachableCode.line_number - 1, 0),
+            new vscode.Position(unreachableCode.line_number - 1, 100)
           );
 
           const message = `Unreachable code detected: ${unreachableCode}`;
@@ -298,8 +282,13 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
             message,
             vscode.DiagnosticSeverity.Warning
           );
-          detectedCodeSmells.add({ type: "Unreachable Code", filePath, startlineNumber:unreachableCode.line_number, endlineNumber: unreachableCode.line_number });
-         
+          detectedCodeSmells.add({
+            type: "Unreachable Code",
+            filePath,
+            startlineNumber: unreachableCode.line_number,
+            endlineNumber: unreachableCode.line_number,
+          });
+
           // Check for duplicate diagnostics
           const existingDiagnostic = diagnostics.find(
             (diag) =>
@@ -319,14 +308,14 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
       "class_details" in detectionData.dead_code &&
       "function_names" in detectionData.dead_code &&
       "global_variables" in detectionData.dead_code &&
-      "imports" in detectionData.dead_code 
+      "imports" in detectionData.dead_code
     ) {
       const classDetails = detectionData.dead_code.class_details;
       const funcNames = detectionData.dead_code.function_names;
       const globalVariables = detectionData.dead_code.global_variables;
 
       if (Array.isArray(classDetails) && classDetails.length > 0) {
-        classDetails.forEach((classDetail,index) => {
+        classDetails.forEach((classDetail, index) => {
           const range = new vscode.Range(
             new vscode.Position(0, 0),
             new vscode.Position(0, 0)
@@ -334,9 +323,9 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
           const newDiagnostic = new vscode.Diagnostic(
             range,
             `${classDetail.class_name} contains dead code`,
-              vscode.DiagnosticSeverity.Warning
+            vscode.DiagnosticSeverity.Warning
           );
-         newDiagnostic.code= "Dead Class"+index;
+          newDiagnostic.code = "Dead Class" + index;
           // Check for duplicate diagnostics
           const existingDiagnostic = diagnostics.find(
             (diag) =>
@@ -349,7 +338,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
           }
         });
         if (Array.isArray(funcNames) && funcNames.length > 0) {
-          funcNames.forEach((funcName,index) => {
+          funcNames.forEach((funcName, index) => {
             const range = new vscode.Range(
               new vscode.Position(0, 0),
               new vscode.Position(0, 0)
@@ -359,7 +348,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
               `${funcName} was defined but never used`,
               vscode.DiagnosticSeverity.Warning
             );
-            newDiagnostic.code= "Dead function"+index;
+            newDiagnostic.code = "Dead function" + index;
             // Check for duplicate diagnostics
             const existingDiagnostic = diagnostics.find(
               (diag) =>
@@ -373,7 +362,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
           });
         }
         if (Array.isArray(globalVariables) && globalVariables.length > 0) {
-          globalVariables.forEach((globalVariable,index) => {
+          globalVariables.forEach((globalVariable, index) => {
             const range = new vscode.Range(
               new vscode.Position(0, 0),
               new vscode.Position(0, 0)
@@ -383,7 +372,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
               `${globalVariable} was defined but never used`,
               vscode.DiagnosticSeverity.Warning
             );
-            newDiagnostic.code= "Dead Global Variables"+index;
+            newDiagnostic.code = "Dead Global Variables" + index;
             // Check for duplicate diagnostics
             const existingDiagnostic = diagnostics.find(
               (diag) =>
@@ -394,11 +383,8 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
             if (!existingDiagnostic) {
               diagnostics.push(newDiagnostic);
             }
-          
           });
         }
-        
-      
       }
     }
 
@@ -409,7 +395,7 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
       "temporary_fields" in detectionData.temporary_field
     ) {
       const tempField = detectionData.temporary_field.temporary_fields;
-    
+
       if (Array.isArray(tempField)) {
         tempField.forEach((tempFieldobj) => {
           let m;
@@ -430,8 +416,13 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
               message,
               vscode.DiagnosticSeverity.Warning
             );
-            detectedCodeSmells.add({ type: "Temporary Field", filePath, startlineNumber:m[0], endlineNumber: m[0] });
-         
+            detectedCodeSmells.add({
+              type: "Temporary Field",
+              filePath,
+              startlineNumber: m[0],
+              endlineNumber: m[0],
+            });
+
             // Check for duplicate diagnostics
             const existingDiagnostic = diagnostics.find(
               (diag) =>
@@ -452,50 +443,50 @@ detectedCodeSmells.add({ type: "Inconsistent Naming convention", filePath, start
       detectionData.overly_complex_condition &&
       "conditionals" in detectionData.overly_complex_condition
     ) {
-            const complexField = detectionData.overly_complex_condition.conditionals;
-            
+      const complexField = detectionData.overly_complex_condition.conditionals;
+
       if (Array.isArray(complexField) && complexField.length > 0) {
-          complexField.forEach((condition, index) => {
-              const range = new vscode.Range(
-                  new vscode.Position(condition.line_number - 1, 0),
-                  new vscode.Position(condition.line_number - 1, 100)
-              );
-      
-              const message = `Overly complex condition detected: ${condition.condition}`;
-              const newDiagnostic = new vscode.Diagnostic(
-                  range,
-                  message,
-                  vscode.DiagnosticSeverity.Warning
-              );
-      
-              newDiagnostic.code = `Complex Conditional-${index}`;
-              detectedCodeSmells.add({ 
-                  type: "Overly Complex Conditional", 
-                  filePath, 
-                  startlineNumber: condition.line_number,
-                  endlineNumber: condition.line_number 
-              });
-      
-              // Check for duplicate diagnostics
-              const existingDiagnostic = diagnostics.find(
-                  (diag) =>
-                      diag.range.isEqual(newDiagnostic.range) &&
-                      diag.message === newDiagnostic.message
-              );
-      
-              if (!existingDiagnostic) {
-                  diagnostics.push(newDiagnostic);
-              }
+        complexField.forEach((condition, index) => {
+          const range = new vscode.Range(
+            new vscode.Position(condition.line_number - 1, 0),
+            new vscode.Position(condition.line_number - 1, 100)
+          );
+
+          const message = `Overly complex condition detected: ${condition.condition}`;
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            message,
+            vscode.DiagnosticSeverity.Warning
+          );
+
+          newDiagnostic.code = `Complex Conditional-${index}`;
+          detectedCodeSmells.add({
+            type: "Overly Complex Conditional",
+            filePath,
+            startlineNumber: condition.line_number,
+            endlineNumber: condition.line_number,
           });
+
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
+
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
+        });
       }
-      }
+    }
 
     const uri = vscode.Uri.file(filePath);
     diagnosticCollection.set(uri, diagnostics);
-    }
-    vscode.commands.executeCommand('package-explorer.refreshCodeSmells');
   }
-  
+  vscode.commands.executeCommand("package-explorer.refreshCodeSmells");
+}
+
 // Create a FolderStructureProvider function
 export function createFolderStructureProvider(
   workspaceRoot: string | undefined
@@ -553,109 +544,187 @@ export function createFolderStructureProvider(
   };
 }
 
-
 export class CodeSmellsProvider implements vscode.TreeDataProvider<TreeItem> {
-    private _onDidChangeTreeData = new vscode.EventEmitter<TreeItem | undefined | void>();
-    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+  private _onDidChangeTreeData = new vscode.EventEmitter<
+    TreeItem | undefined | void
+  >();
+  readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    refresh(): void {
-        this._onDidChangeTreeData.fire();
-    }
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
+  }
 
-    getTreeItem(element: TreeItem): vscode.TreeItem {
-        return element;
-    }
+  getTreeItem(element: TreeItem): vscode.TreeItem {
+    return element;
+  }
 
-    getChildren(element?: TreeItem): Thenable<TreeItem[]> {
-        if (!element) {
-            // Root level - group by code smell type
-            const types = new Set([...detectedCodeSmells].map(smell => smell.type));
-            return Promise.resolve(
-                Array.from(types).map(type => 
-                    new CodeSmellItem(
-                        type, 
-                        [...detectedCodeSmells].filter(smell => smell.type === type)
-                    )
-                )
-            );
-        } else if (element instanceof CodeSmellItem) {
-            // Show files for this smell type
-            return Promise.resolve(
-                element.instances.map(detail => new FileItem(detail))
-            );
-        }
-        return Promise.resolve([]);
+  getChildren(element?: TreeItem): Thenable<TreeItem[]> {
+    if (!element) {
+      // Root level - group by code smell type
+      const types = new Set([...detectedCodeSmells].map((smell) => smell.type));
+      return Promise.resolve(
+        Array.from(types).map(
+          (type) =>
+            new CodeSmellItem(
+              type,
+              [...detectedCodeSmells].filter((smell) => smell.type === type)
+            )
+        )
+      );
+    } else if (element instanceof CodeSmellItem) {
+      // Show files for this smell type
+      return Promise.resolve(
+        element.instances.map((detail) => new FileItem(detail))
+      );
     }
+    return Promise.resolve([]);
+  }
 }
 
 abstract class TreeItem extends vscode.TreeItem {}
 
 class CodeSmellItem extends TreeItem {
-    constructor(
-        public readonly type: string,
-        public readonly instances: CodeSmellDetail[]
-    ) {
-        super(type, vscode.TreeItemCollapsibleState.Expanded);
-        this.tooltip = `${instances.length} instance(s) found`;
-    }
+  constructor(
+    public readonly type: string,
+    public readonly instances: CodeSmellDetail[]
+  ) {
+    super(type, vscode.TreeItemCollapsibleState.Expanded);
+    this.tooltip = `${instances.length} instance(s) found`;
+  }
 }
 
 class FileItem extends TreeItem {
-    constructor(private detail: CodeSmellDetail) {
-        super(path.basename(detail.filePath), vscode.TreeItemCollapsibleState.None);
-        this.tooltip = detail.filePath;
-        this.command = {
-            command: 'vscode.open',
-            title: 'Open File',
-            arguments: [vscode.Uri.file(detail.filePath)]
-        };
-    }
+  constructor(private detail: CodeSmellDetail) {
+    super(path.basename(detail.filePath), vscode.TreeItemCollapsibleState.None);
+    this.tooltip = detail.filePath;
+    this.command = {
+      command: "vscode.open",
+      title: "Open File",
+      arguments: [vscode.Uri.file(detail.filePath)],
+    };
+  }
 }
 
+export function userTriggeredcodesmell(
+  codeSmell : string,
+  FileDetectionData: { [key: string]: DetectionResponse },
+  diagnosticCollection: vscode.DiagnosticCollection
+) {
+  diagnosticCollection.clear();
+  for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
+    const diagnostics: vscode.Diagnostic[] = [];
+    if (detectionData.user_triggered_detection) {
+      detectionData.user_triggered_detection.forEach((detection) => {
+        if (detection?.success && detection.data && !detection.outdated) {
+          const detectedJobType = detection.job_id;
+          let message = "";
+          if (detection.job_id === "long_function"  && detection.job_id === codeSmell) {
+            detection.data.forEach((data) => {
+              message = ` Long function detected ${data.Detected} `;
+              detectedCodeSmells.add({
+                type: "Long Function",
+                filePath,
+                startlineNumber: data.line_number,
+                endlineNumber: data.line_number,
+              });
+            });
+            // message = ` Long function detected ${detection.data[0].Detection} `;
+            // detectedCodeSmells.add({ type: "Long Function", filePath, startlineNumber: detection.data[0].line_number , endlineNumber: detection.data[0].line_number });
+          } else if (detection.job_id === "god_object" && detection.job_id === codeSmell) {
+            detection.data.forEach((data) => {
+              message = ` God object detected ${data.Detected} `;
+              detectedCodeSmells.add({
+                type: "God object",
+                filePath,
+                startlineNumber: data.line_number,
+                endlineNumber: data.line_number,
+              });
+            });
+            //  message = ` God object detected ${detection.data[0].Detection} `;
+            //  detectedCodeSmells.add({ type: "God object", filePath, startlineNumber: detection.data[0].line_number , endlineNumber: detection.data[0].line_number });
+          } else if (detection.job_id === "feature_envy"  && detection.job_id === codeSmell) {
+            detection.data.forEach((data) => {
+              message = ` Feature envy detected ${data.Detected} `;
+              detectedCodeSmells.add({
+                type: "Feature Envy",
+                filePath,
+                startlineNumber: data.line_number,
+                endlineNumber: data.line_number,
+              });
+            });
+            //  message = ` Feature envy detected ${detection.data[0].Detection} `;
+            //  detectedCodeSmells.add({ type: "Feature Envy", filePath, startlineNumber: detection.data[0].line_number , endlineNumber: detection.data[0].line_number });
+          } else if (detection.job_id === "inappropriate_intimacy" && detection.job_id === codeSmell) {
+            detection.data.forEach((data) => {
+              message = ` Inappropriate intimacy detected ${data.Detected} `;
+              detectedCodeSmells.add({
+                type: "Inappropriate Intimacy",
+                filePath,
+                startlineNumber: data.line_number,
+                endlineNumber: data.line_number,
+              });
+            });
+            // message = ` Inappropriate intimacy detected ${detection.data[0].Detection} `;
+            // detectedCodeSmells.add({ type: "Inappropriate Intimacy", filePath, startlineNumber: detection.data[0].line_number , endlineNumber: detection.data[0].line_number });
+          } else if (detection.job_id === "middle_man" && detection.job_id === codeSmell) {
+            detection.data.forEach((data) => {
+              message = ` Middle Man detected ${data.Detected} `;
+              detectedCodeSmells.add({
+                type: "Middle Man",
+                filePath,
+                startlineNumber: data.line_number,
+                endlineNumber: data.line_number,
+              });
+            });
+          } else if (detection.job_id === "switch_statement_abuser" && detection.job_id === codeSmell) {
+            detection.data.forEach((data) => {
+              message = ` Switch statement abuser detected ${data.Detected} `;
+              detectedCodeSmells.add({
+                type: "Switch Statement Abuser",
+                filePath,
+                startlineNumber: data.line_number,
+                endlineNumber: data.line_number,
+              });
+            });
+          } else if (detection.job_id === "excessive_flags" && detection.job_id === codeSmell) {
+            detection.data.forEach((data) => {
+              message = ` Excessive flags detected ${data.Detected} `;
+              detectedCodeSmells.add({
+                type: "Excessive Flags",
+                filePath,
+                startlineNumber: data.line_number,
+                endlineNumber: data.line_number,
+              });
+            });
+          }
+        if (message !== ""){
+          const range = new vscode.Range(
+            new vscode.Position(detection.data[0].line_number - 1, 0),
+            new vscode.Position(detection.data[0].line_number - 1, 100)
+          );
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            message,
+            vscode.DiagnosticSeverity.Warning
+          );
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
 
-
-
-// // Update FileItem class to include context menu
-// class FileItem extends TreeItem {
-//   constructor(private detail: CodeSmellDetail) {
-//       super(path.basename(detail.filePath), vscode.TreeItemCollapsibleState.None);
-//       this.tooltip = `${detail.filePath}\nClick to open file\nRight click to see refactor options`;
-//       this.contextValue = 'codeSmellFile'; // Enable context menu
-//       this.command = {
-//           command: 'vscode.open',
-//           title: 'Open File',
-//           arguments: [vscode.Uri.file(detail.filePath)]
-//       };
-//   }
-// }
-
-// // Add to package.json in contributes.commands section:
-// /*
-// {
-//   "command": "codenexus.refactorFile",
-//   "title": "Refactor Code Smell"
-// }
-
-// // Add to contributes.menus section:
-// "view/item/context": [
-//   {
-//       "command": "codenexus.refactorFile",
-//       "when": "view == package-outline && viewItem == codeSmellFile",
-//       "group": "inline"
-//   }
-// ]
-// */
-
-// // Add command registration in extension.ts activate function:
-// ```typescript
-// context.subscriptions.push(
-//   vscode.commands.registerCommand('codenexus.refactorFile', (item: FileItem) => {
-//       vscode.window.showInformationMessage(`Refactoring ${item.detail.type} in ${item.detail.filePath}`);
-//       // Call your existing refactor logic here
-//   })
-// );
-
-
-
-
-
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
+        }
+        }
+      });
+    }
+    console.log(diagnostics, diagnostics.length);
+    if (diagnostics.length > 0){
+    const uri = vscode.Uri.file(filePath);
+    diagnosticCollection.set(uri, diagnostics);
+    } 
+  }
+  vscode.commands.executeCommand("package-explorer.refreshCodeSmells");
+}
