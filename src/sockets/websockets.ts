@@ -6,11 +6,21 @@ import { detectionHelper } from './detections/detection_helper';
 let statusBarItem: vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
-    // Initialize status bar item
-    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-    context.subscriptions.push(statusBarItem);
+    // Create status bar if it doesn't exist
+    if (!statusBarItem) {
+        statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+        context.subscriptions.push(statusBarItem);
+    }
     
 }
+// Helper function to ensure status bar exists
+function getStatusBar(): vscode.StatusBarItem {
+    if (!statusBarItem) {
+        statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+    }
+    return statusBarItem;
+}
+
 function sendMessage(
     ws: WebSocket | null,
     taskData: { [key: string]: string } ,

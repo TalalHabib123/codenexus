@@ -124,10 +124,13 @@ export async function activate(context: vscode.ExtensionContext) {
     console.log("__________________FOLDER STRUCTURE DATA __________________");
     console.log(folderStructureData);
     console.log("_____________________________________________________");
-    statusBarItem.text = "$(check) Analysis complete";
+    statusBarItem.text = "$(check) Analysis complete.Populating Problems Tab...";
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
-
+    // Hide after 2 seconds
+    setTimeout(() => {
+        statusBarItem.hide();
+    }, 2000);
     fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection);
     const codeSmellsProvider = new CodeSmellsProvider();
     vscode.window.registerTreeDataProvider('package-outline', codeSmellsProvider);
@@ -194,7 +197,9 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         }
     );
-
+    statusBarItem.text = "$(check) Analysis complete";
+//push staticBarItem to context.subscriptions
+    context.subscriptions.push(statusBarItem);
     context.subscriptions.push(refactorCommand);
     // Add a CodeActionProvider for diagnostics
     context.subscriptions.push(
