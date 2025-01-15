@@ -6,12 +6,26 @@ export const getNamingConventionSmells = async (
     newFiles: { [key: string]: string },
     FileDetectionData: { [key: string]: DetectionResponse }) => {
     
+    const DetectionData: { [key: string]: any } = {};
+    const analysisPromises = [];
     for (const [filePath, data] of Object.entries(newFiles)) {
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
             continue;
         }
-        
-        let detectionData = await detectNamingConvention(data);
+        const analysisPromise = detectNamingConvention(data, DetectionData, filePath)
+            .catch((error) => {
+                console.log('Error in file:', filePath);
+                FileDetectionData[filePath] = {
+                    success: false,
+                    error: error.message
+                };
+            });
+        analysisPromises.push(analysisPromise);
+
+    }
+    await Promise.allSettled(analysisPromises);
+
+    for (const [filePath, detectionData] of Object.entries(DetectionData)) {
         if(!FileDetectionData[filePath]){
             FileDetectionData[filePath] = { success: false, naming_convention: { success: false, data: [] } };
         }
@@ -28,3 +42,20 @@ export const getNamingConventionSmells = async (
         }
     }
 };
+
+
+// let detectionData = await detectNamingConvention(data);
+// if(!FileDetectionData[filePath]){
+//     FileDetectionData[filePath] = { success: false, naming_convention: { success: false, data: [] } };
+// }
+// if (detectionData.data.success) {
+//     FileDetectionData[filePath].naming_convention = {
+//             success: true,
+//             data: detectionData.data
+//         };
+// } else {
+//     FileDetectionData[filePath].naming_convention = {
+//             success: false,
+//             error: detectionData.data.error || 'Unknown error'
+//         };
+// }

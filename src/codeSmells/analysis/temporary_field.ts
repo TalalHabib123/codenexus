@@ -7,6 +7,7 @@ async function getTemporaryFieldSmells(
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
     const TemporaryFieldData: { [key: string]: TemporaryVariableResponse } = {};
+    const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
             continue;
@@ -20,9 +21,20 @@ async function getTemporaryFieldSmells(
             continue;
         }
         if (data.class_details && data.class_details.length > 0) {
-            await sendFileForTemporaryFieldAnalysis(filePath, data.code, TemporaryFieldData);
+            const analysisPromise = sendFileForTemporaryFieldAnalysis(filePath, data.code, TemporaryFieldData)
+                .catch((error) => {
+                    console.log('Error in file:', filePath);
+                    FileDetectionData[filePath] = {
+                        success: false,
+                        error: error.message
+                    };
+                });
+            analysisPromises.push(analysisPromise);
+            // await sendFileForTemporaryFieldAnalysis(filePath, data.code, TemporaryFieldData);
         }
     }
+
+    await Promise.allSettled(analysisPromises);
 
     for (const [filePath, data] of Object.entries(TemporaryFieldData)) {
         if (!FileDetectionData[filePath]) {
