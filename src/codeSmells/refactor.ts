@@ -47,7 +47,8 @@ export const refactor = async (
                     };
                     const response = await refactorNamingConvention(refactorRequest);
                     if (response.data.success) {
-                        console.log("Refactor successful:", response.data.refactored_code);
+
+                        console.log("Refactor successful:", response.data);
                         const newRefactrData: RefactoringData = {
                             orginal_code: fileContent,
                             refactored_code: response.data.refactored_code,
@@ -82,6 +83,7 @@ export const refactor = async (
                             }
                         }
                         refactorData[filePath].push(newRefactrData);
+                        console.log("Refactor data:", refactorData);
                         return response.data;
                     }
                 }
