@@ -30,29 +30,34 @@ class AuthViewProvider implements vscode.WebviewViewProvider {
                 <style>
                     body {
                         display: flex;
-                        justify-content: right;
-                        align-items: top;
+                        justify-content: center;
+                        align-items: center;
+                        text-align: center;
+                        flex-direction: column;
                         background-color: #1e1e1e;
+                        height: 100vh;
                         color: white;
                         font-family: Arial, sans-serif;
                     }
                     #login-btn {
-                        background-color: #007acc;
-                        color: white;
+                        background-color: transparent ;
+                        color: #007acc;
                         font-size: 16px;
                         padding: 10px 20px;
                         border: none;
                         border-radius: 5px;
                         cursor: pointer;
                         transition: background-color 0.3s;
+                        text-decoration:underline;
                     }
                     #login-btn:hover {
-                        background-color: #005f99;
+                        color: #005f99;
                     }
                 </style>
             </head>
             <body>
-                <button id="login-btn">🔑 Login</button>
+                <p> Login to your codenexus account for a better experience </p>
+                <button id="login-btn">Login to your account</button>
                 <script>
                     const vscode = acquireVsCodeApi();
                     document.getElementById("login-btn").addEventListener("click", () => {
