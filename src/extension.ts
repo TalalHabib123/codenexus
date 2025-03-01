@@ -20,6 +20,8 @@ import { CodeSmellsProvider } from './utils/ui/problemsTab';
 import { RefactoringData } from './types/refactor_models';
 import { userTriggeredcodesmell } from './utils/ui/problemsTab';
 import { createFile, watchRulesetsFile } from './utils/workspace-update/rulesets';
+import { Rules } from './types/rulesets';
+import { login } from './utils/ui/login';
 
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
@@ -28,11 +30,16 @@ let folderStructureData: { [key: string]: FolderStructure } = {};
 let statusBarItem: vscode.StatusBarItem;
 let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
 let refactorData: { [key: string]: Array<RefactoringData> } = {};
-
+let rulesetsData: Rules = {detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: ["*"]};
 
 export async function activate(context: vscode.ExtensionContext) {
+
     createFile(context);
-    watchRulesetsFile(context);
+    watchRulesetsFile(context, rulesetsData);
+    login(context);
+
+
+    
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
@@ -86,7 +93,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         statusBarItem.text = "$(sync~spin) Static Analysis in progress...";
         statusBarItem.show();
-        await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
+        await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData);
         // Show success message
         statusBarItem.text = "$(check) Analysis complete";
         statusBarItem.show();
@@ -148,7 +155,7 @@ export async function activate(context: vscode.ExtensionContext) {
     setTimeout(() => {
         statusBarItem.hide();
     }, 2000);
-    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection);
+    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection, rulesetsData);
     const codeSmellsProvider = new CodeSmellsProvider();
     vscode.window.registerTreeDataProvider('package-outline', codeSmellsProvider);
     context.subscriptions.push(
@@ -241,7 +248,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
-    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData, rulesetsData);
 
 }
 

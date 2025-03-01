@@ -5,6 +5,7 @@ import { FileNode } from '../../types/graph';
 import { detectCodeSmells } from '../../codeSmells/detection';
 import { CodeResponse, DetectionResponse } from '../../types/api';
 import{showCodeSmellsInProblemsTab} from '../ui/problemsTab';
+import { Rules } from '../../types/rulesets';
 
 
 export const fileWatcherEventHandler = (
@@ -13,13 +14,14 @@ export const fileWatcherEventHandler = (
   FileDetectionData: { [key: string]: DetectionResponse },
   dependencyGraph: { [key: string]: Map<string, FileNode> },
   folders: string[],
-  diagnosticCollection: vscode.DiagnosticCollection
+  diagnosticCollection: vscode.DiagnosticCollection,
+  rulesetsData: Rules
 ) => {
   const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.py', false, false, false);
 
   fileWatcher.onDidCreate(uri => {
     // Add the file to the dependency graph and check its compilability
-    checkCompilable(uri.fsPath, fileData, FileDetectionData, dependencyGraph, folders,diagnosticCollection);
+    checkCompilable(uri.fsPath, fileData, FileDetectionData, dependencyGraph, folders,diagnosticCollection, rulesetsData);
   });
 
   fileWatcher.onDidDelete(uri => {
@@ -39,7 +41,7 @@ export const fileWatcherEventHandler = (
 
     debounceTimers[filePath] = setTimeout(() => {
       if (filePath.endsWith('.py')) {
-        checkCompilable(filePath, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection);
+        checkCompilable(filePath, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection, rulesetsData);
       }
     }, 1000); 
   });
@@ -51,7 +53,8 @@ async function checkCompilable(
   FileDetectionData: { [key: string]: DetectionResponse },
   dependencyGraph: { [key: string]: Map<string, FileNode> },
   folders: string[],
-  diagnosticCollection: vscode.DiagnosticCollection
+  diagnosticCollection: vscode.DiagnosticCollection,
+  rulesetsData: Rules
 ) {
  
   if (filePath.endsWith('.pyc') || filePath.includes('__pycache__')) {
@@ -72,7 +75,7 @@ async function checkCompilable(
       const newFile = { [filePath]: content };
 
       // Detect code smells after successful compilation
-      await detectCodeSmells(dependencyGraph, fileData, folders, newFile, FileDetectionData);
+      await detectCodeSmells(dependencyGraph, fileData, folders, newFile, FileDetectionData, rulesetsData);
        // Show detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
     } catch (readError) {

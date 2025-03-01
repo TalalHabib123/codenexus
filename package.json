@@ -42,6 +42,11 @@
         {
           "id": "manualCodeView",
           "name": "Trigger Code Analysis"
+        },
+        {
+          "id": "authView", 
+          "name": "Authentication",
+          "type": "webview"
         }
       ]
     },
