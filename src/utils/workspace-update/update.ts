@@ -5,6 +5,8 @@ import { FileNode } from '../../types/graph';
 import { detectCodeSmells } from '../../codeSmells/detection';
 import { CodeResponse, DetectionResponse } from '../../types/api';
 import{showCodeSmellsInProblemsTab} from '../ui/problemsTab';
+
+
 export const fileWatcherEventHandler = (
   context: vscode.ExtensionContext,
   fileData: { [key: string]: CodeResponse },

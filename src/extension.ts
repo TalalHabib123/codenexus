@@ -19,6 +19,7 @@ import { establishWebSocketConnection } from './sockets/websockets';
 import { CodeSmellsProvider } from './utils/ui/problemsTab';
 import { RefactoringData } from './types/refactor_models';
 import { userTriggeredcodesmell } from './utils/ui/problemsTab';
+import { createFile, watchRulesetsFile } from './utils/workspace-update/rulesets';
 
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
@@ -30,6 +31,8 @@ let refactorData: { [key: string]: Array<RefactoringData> } = {};
 
 
 export async function activate(context: vscode.ExtensionContext) {
+    createFile(context);
+    watchRulesetsFile(context);
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
@@ -138,6 +141,7 @@ export async function activate(context: vscode.ExtensionContext) {
     console.log("_____________________________________________________");
     statusBarItem.text = "$(check) Analysis complete.Populating Problems Tab...";
     statusBarItem.show();
+
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
     // Hide after 2 seconds
