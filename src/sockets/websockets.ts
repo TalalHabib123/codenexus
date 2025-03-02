@@ -1,8 +1,11 @@
 import WebSocket from 'ws';
 import * as vscode from 'vscode';
 import { CodeResponse, DetectionResponse, UserTriggeredDetectionResponse, UserTriggeredDetection } from '../types/api';
-import { taskDataGenerator } from './detections/generate_task_data';
+import { taskDataGenerator as detectionTaskDataGenerator } from './detections/generate_task_data';
 import { detectionHelper } from './detections/detection_helper';
+import { refactoringHelper } from './refactorings/refactoring_helper';
+import { codeMapper } from './refactorings/code_mapper';
+import { taskDataGenerator as refactoringDataGenerator } from './refactorings/generate_task_data';
 import { showCodeSmellsInProblemsTab } from '../utils/ui/problemsTab';
 import { userTriggeredcodesmell } from '../utils/ui/problemsTab';
 let statusBarItem: vscode.StatusBarItem;
@@ -29,7 +32,7 @@ function getStatusBar(): vscode.StatusBarItem {
 
 function sendMessage(
     ws: WebSocket | null,
-    taskData: { [key: string]: string } ,
+    taskData: { [key: string]: string },
     taskType: string,
     taskJob: string,
 ) {
@@ -46,15 +49,23 @@ function sendMessage(
 }
 
 function establishWebSocketConnection(codeSmell: string,
-    ws: WebSocket | null = null, 
+    ws: WebSocket | null = null,
     fileData: { [key: string]: CodeResponse },
-    FileDetectionData: { [key: string]: DetectionResponse } ,
+    FileDetectionData: { [key: string]: DetectionResponse },
     taskType: string,
     taskJob: string,
     diagnosticCollection: vscode.DiagnosticCollection,
-    context: vscode.ExtensionContext
+    context: vscode.ExtensionContext,
+    file: string = '',
+    additonalData: any = null,
 ) {
-    const taskData = taskDataGenerator(fileData, taskType, detectionHelper[taskJob]);
+    let taskData;
+    if (taskType === 'detection') {
+        taskData = detectionTaskDataGenerator(fileData, taskType, detectionHelper[taskJob]);
+    }
+    else if (taskType === 'refactoring') {
+        taskData = refactoringDataGenerator(fileData, refactoringHelper[taskJob], file, additonalData);
+    }
     if (!taskData || Object.keys(taskData).length === 0) {
         vscode.window.showErrorMessage('No data to send for Analysis.');
         return;
@@ -77,13 +88,15 @@ function establishWebSocketConnection(codeSmell: string,
                     status.show();
                 }
                 if (message.task_status === 'success') {
-                   status.text = "$(check) Analysis complete:Data processed";
-                   status.show();
+                    status.text = "$(check) Analysis complete:Data processed";
+                    status.show();
                     vscode.window.showInformationMessage(`Task completed`);
-                    if (message.processed_data)
-                    {
-                        if (message.task_type === 'detection') { 
+                    if (message.processed_data) {
+                        if (message.task_type === 'detection') {
                             for (const [file, data] of Object.entries(message.processed_data)) {
+                                if (typeof data === 'string') {
+                                    continue;
+                                }
                                 const newTriggerData: UserTriggeredDetection = {
                                     data: data,
                                     time: new Date(),
@@ -96,17 +109,17 @@ function establishWebSocketConnection(codeSmell: string,
                                 if (!FileDetectionData[file].user_triggered_detection) {
                                     FileDetectionData[file].user_triggered_detection = [];
                                 }
-                                else{
+                                else {
                                     for (let i = 0; i < FileDetectionData[file].user_triggered_detection.length; i++) {
                                         if (FileDetectionData[file].user_triggered_detection[i].job_id === taskJob) {
                                             FileDetectionData[file].user_triggered_detection[i].outdated = true;
                                         }
                                     }
                                 }
-                                
+
                                 FileDetectionData[file].user_triggered_detection.push(newTriggerData);
                             }
-                            console.log("__________________FILE DETECTION DATA in trigger __________________");   
+                            console.log("__________________FILE DETECTION DATA in trigger __________________");
                             console.log(FileDetectionData);
                             console.log("_____________________________________________________");
                             // showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
@@ -114,18 +127,26 @@ function establishWebSocketConnection(codeSmell: string,
                             vscode.window.showInformationMessage(`Problems updated for: ${taskJob}`);
                             context.workspaceState.update('FileDetectionData', FileDetectionData);
                         }
+
+                        else if (message.task_type === 'refactoring') {
+                            vscode.window.showInformationMessage(`Refactoring completed for: ${taskJob}`);
+                            const refactoredData = message.processed_data.code_snippet;
+                            if (refactoredData && typeof refactoredData === 'string') {
+                                codeMapper(refactoredData, file);
+                            }
+                        }
                     }
-                    
-                setTimeout(() => {
-                   status.hide();
-                }, 3000);
+
+                    setTimeout(() => {
+                        status.hide();
+                    }, 3000);
                 }
                 else if (message.task_status === 'task_failed') {//loading state error
                     status.text = "$(error) Analysis failed";
                     status.show();
                     vscode.window.showErrorMessage(`Task failed: ${message.error}`);
                     setTimeout(() => {
-                       status.hide();
+                        status.hide();
                     }, 3000);
                 }
                 else if (message.task_status === 'task_started') {//loading state
