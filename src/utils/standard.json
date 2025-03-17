@@ -5,6 +5,6 @@
                     "src/utils/standard.json", 
                     {"path": "src/utils/standard.json", "smells": ["*"]}],
     "excludeFiles": ["*",
-                    {"path": "src/utils/standard.json", "smells": ["*"]}]
+                    {"path": "src/utils/standard.py", "smells": ["*"]}]
 
 } 
