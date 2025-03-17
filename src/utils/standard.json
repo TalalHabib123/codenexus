@@ -1,0 +1,10 @@
+{
+    "refactorSmells": ["*"],
+    "detectSmells": ["*"],
+    "includeFiles": ["*", 
+                    "src/utils/standard.json", 
+                    {"path": "src/utils/standard.json", "smells": ["*"]}],
+    "excludeFiles": ["*",
+                    {"path": "src/utils/standard.json", "smells": ["*"]}]
+
+} 

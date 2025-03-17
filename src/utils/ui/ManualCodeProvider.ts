@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import {triggerCodeSmellDetection} from '../../extension'
 import { showCodeSmellsInProblemsTab } from './problemsTab';
+
+
 export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<ManualCodeItem | undefined | void> = new vscode.EventEmitter<ManualCodeItem | undefined | void>();
     readonly onDidChangeTreeData: vscode.Event<ManualCodeItem | undefined | void> = this._onDidChangeTreeData.event;

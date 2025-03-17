@@ -169,7 +169,7 @@ interface UserTriggeredDetectionResponse {
             Detected?: string;
             Issue?: string;
             LineNumber?: number;
-        }>;
+        }> | string;
     };
     task_status: string;
     task_type?: string;

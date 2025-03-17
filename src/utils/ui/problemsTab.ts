@@ -330,7 +330,6 @@ export function showCodeSmellsInProblemsTab(
       const classDetails = detectionData.dead_code.class_details;
       const funcNames = detectionData.dead_code.function_names;
       const globalVariables = detectionData.dead_code.global_variables;
-
       if (Array.isArray(classDetails) && classDetails.length > 0) {
         classDetails.forEach((classDetail, index) => {
           const range = new vscode.Range(
@@ -354,54 +353,56 @@ export function showCodeSmellsInProblemsTab(
             diagnostics.push(newDiagnostic);
           }
         });
-        if (Array.isArray(funcNames) && funcNames.length > 0) {
-          funcNames.forEach((funcName, index) => {
-            const range = new vscode.Range(
-              new vscode.Position(0, 0),
-              new vscode.Position(0, 0)
-            );
-            const newDiagnostic = new vscode.Diagnostic(
-              range,
-              `${funcName}: Function was defined but never used`,
-              vscode.DiagnosticSeverity.Warning
-            );
-            newDiagnostic.code = "Dead function" + index;
-            // Check for duplicate diagnostics
-            const existingDiagnostic = diagnostics.find(
-              (diag) =>
-                diag.range.isEqual(newDiagnostic.range) &&
-                diag.message === newDiagnostic.message
-            );
+      
+      }
+      if (Array.isArray(funcNames) && funcNames.length > 0) {
+        funcNames.forEach((funcName, index) => {
+          
+          const range = new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
+          );
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            `${funcName}: Function was defined but never used`,
+            vscode.DiagnosticSeverity.Warning
+          );
+          newDiagnostic.code = "Dead function" + index;
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
 
-            if (!existingDiagnostic) {
-              diagnostics.push(newDiagnostic);
-            }
-          });
-        }
-        if (Array.isArray(globalVariables) && globalVariables.length > 0) {
-          globalVariables.forEach((globalVariable, index) => {
-            const range = new vscode.Range(
-              new vscode.Position(0, 0),
-              new vscode.Position(0, 0)
-            );
-            const newDiagnostic = new vscode.Diagnostic(
-              range,
-              `${globalVariable}: Global Variable was defined but never used`,
-              vscode.DiagnosticSeverity.Warning
-            );
-            newDiagnostic.code = "Dead Global Variables" + index;
-            // Check for duplicate diagnostics
-            const existingDiagnostic = diagnostics.find(
-              (diag) =>
-                diag.range.isEqual(newDiagnostic.range) &&
-                diag.message === newDiagnostic.message
-            );
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
+        });
+      }
+      if (Array.isArray(globalVariables) && globalVariables.length > 0) {
+        globalVariables.forEach((globalVariable, index) => {
+          const range = new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
+          );
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            `${globalVariable}: Global Variable was defined but never used`,
+            vscode.DiagnosticSeverity.Warning
+          );
+          newDiagnostic.code = "Dead Global Variables" + index;
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
 
-            if (!existingDiagnostic) {
-              diagnostics.push(newDiagnostic);
-            }
-          });
-        }
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
+        });
       }
     }
 

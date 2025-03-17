@@ -7,6 +7,7 @@ async function getUnreachableCodeSmells(
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
     const UnreachableCodeData: { [key: string]: UnreachableResponse } = {};
+    const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
             continue;
@@ -19,9 +20,20 @@ async function getUnreachableCodeSmells(
             };
             continue;
         }
-        await sendFileForUnreachableCodeAnalysis(filePath, data.code, UnreachableCodeData);
+        const analysisPromise = sendFileForUnreachableCodeAnalysis(filePath, data.code, UnreachableCodeData)
+            .catch((error) => {
+                console.log('Error in file:', filePath);
+                FileDetectionData[filePath] = {
+                    success: false,
+                    error: error.message
+                };
+            });
+        analysisPromises.push(analysisPromise);
+        // await sendFileForUnreachableCodeAnalysis(filePath, data.code, UnreachableCodeData);
     }
 
+    await Promise.allSettled(analysisPromises);
+    
     for (const [filePath, data] of Object.entries(UnreachableCodeData)) {
         if (!FileDetectionData[filePath]) {
             FileDetectionData[filePath] = { success: false, unreachable_code: { success: false, data: [] } };

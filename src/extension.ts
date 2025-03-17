@@ -19,6 +19,9 @@ import { establishWebSocketConnection } from './sockets/websockets';
 import { CodeSmellsProvider } from './utils/ui/problemsTab';
 import { RefactoringData } from './types/refactor_models';
 import { userTriggeredcodesmell } from './utils/ui/problemsTab';
+import { createFile, watchRulesetsFile } from './utils/workspace-update/rulesets';
+import { Rules } from './types/rulesets';
+import { login } from './utils/ui/login';
 
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
@@ -27,9 +30,16 @@ let folderStructureData: { [key: string]: FolderStructure } = {};
 let statusBarItem: vscode.StatusBarItem;
 let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
 let refactorData: { [key: string]: Array<RefactoringData> } = {};
-
+let rulesetsData: Rules = {detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: ["*"]};
 
 export async function activate(context: vscode.ExtensionContext) {
+
+    createFile(context);
+    watchRulesetsFile(context, rulesetsData);
+    login(context);
+
+
+    
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
@@ -83,7 +93,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         statusBarItem.text = "$(sync~spin) Static Analysis in progress...";
         statusBarItem.show();
-        await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData);
+        await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData);
         // Show success message
         statusBarItem.text = "$(check) Analysis complete";
         statusBarItem.show();
@@ -138,13 +148,14 @@ export async function activate(context: vscode.ExtensionContext) {
     console.log("_____________________________________________________");
     statusBarItem.text = "$(check) Analysis complete.Populating Problems Tab...";
     statusBarItem.show();
+
     // Showing detected code smells in the Problems tab
     showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
     // Hide after 2 seconds
     setTimeout(() => {
         statusBarItem.hide();
     }, 2000);
-    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection);
+    fileWatcherEventHandler(context, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection, rulesetsData);
     const codeSmellsProvider = new CodeSmellsProvider();
     vscode.window.registerTreeDataProvider('package-outline', codeSmellsProvider);
     context.subscriptions.push(
@@ -192,7 +203,9 @@ export async function activate(context: vscode.ExtensionContext) {
                 statusBarItem.text = "$(sync~spin) Refactoring in progress...";
                 // Send diagnostic to the backend
                 const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData, refactorData);
-
+                console.log("__________________REFRACTORED CODE __________________");
+                console.log(refactoredCode);
+                console.log("_____________________________________________________");
 
                 if (refactoredCode) {
 
@@ -303,11 +316,7 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
 
                 // Map filtered diagnostics to specific code actions
         return matchingDiagnostics.map((diagnostic) => {
-            console.log("__________________DIAGNOSTIC Starts here__________________");
-            console.log("Diagnostic Range:", diagnostic.range);
-            console.log("Diagnostic Code:", diagnostic.code);
-            console.log("Diagnostic Message:", diagnostic.message);
-            console.log("_____________________________________________________");
+            
         
             // Create a descriptive title for the Code Action using template literals
             const actionTitle = `Fix "${diagnostic.message}" using codeNexus`;

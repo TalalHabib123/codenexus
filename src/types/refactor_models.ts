@@ -56,14 +56,18 @@ interface DeadCodeRefactorRequest {
 
 interface RefactorResponse {
     refactored_code: string;
+    dependencies?: Dependency[];
     success: boolean;
     error?: string; 
 }
+
+
 
 interface RefactoringData {
     orginal_code: string;
     refactored_code?: string;
     refactoring_type?: string;
+    refactored_dependencies?: Dependency[];
     time: Date;
     cascading_refactor?: boolean;
     job_id?: string;
@@ -75,6 +79,8 @@ interface RefactoringData {
 }
 
 
+
+
 export {
     RefactorRequest,
     UnusedVariablesRefactorRequest,
@@ -84,5 +90,6 @@ export {
     DeadCodeRefactorRequest,
     RefactorResponse, 
     Dependency,
-    RefactoringData
+    RefactoringData,
+    
 };

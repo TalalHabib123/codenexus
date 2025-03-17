@@ -25,6 +25,7 @@ async function getDeadCodeSmells(
             DeadCodeData[filePath] = data.dead_code;
         }
     }
+    const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
         if (data.error || !data.code || data.code === "") {
             console.log('Error in file:', filePath);    
@@ -39,8 +40,17 @@ async function getDeadCodeSmells(
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
             continue;
         }
-        await sendFileForDeadCodeAnalysis(filePath, data.code, function_names, global_variables, DeadCodeData);
+        const analysisPromise = sendFileForDeadCodeAnalysis(filePath, data.code, function_names, global_variables, DeadCodeData)
+            .catch((error) => {
+                console.log('Error in file:', filePath);
+                DeadCodeData[filePath] = {
+                    success: false,
+                    error: error.message
+                };
+            });
+        analysisPromises.push(analysisPromise);
     }
+    await Promise.allSettled(analysisPromises);
     for (const workspaceFolder of workspaceFolders) {
         const files = separate_files(workspaceFolder, fileData);
         const dependencyGraphForFolder = dependencyGraph[workspaceFolder];

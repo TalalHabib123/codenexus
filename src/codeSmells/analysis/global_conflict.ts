@@ -21,6 +21,7 @@ async function getGlobalConflictSmells(
     for (const folder of workspaceFolders) {
         const files = separate_files(folder, fileData);
         const all_files_global_variables_list: { [key: string]: string[] } = {};
+        const analysisPromises = [];
         for (const [filePath, data] of Object.entries(files)) {
             if (!Object.keys(newFiles).some((key) => key === filePath)) {
                 continue;
@@ -36,9 +37,19 @@ async function getGlobalConflictSmells(
             const global_variables_list = data.global_variables?.map(variable => variable.variable_name) || [];
             if (global_variables_list.length > 0) {
                 all_files_global_variables_list[filePath] = global_variables_list;
-                await sendFileForGlobalConflictAnalysis(filePath, data.code, global_variables_list, GlobalConflictData);
+                const analysisPromise = sendFileForGlobalConflictAnalysis(filePath, data.code, global_variables_list, GlobalConflictData)
+                    .catch((error) => {
+                        console.log('Error in file:', filePath);
+                        FileDetectionData[filePath] = {
+                            success: false,
+                            error: error.message
+                        };
+                    });
+                analysisPromises.push(analysisPromise);
+                // await sendFileForGlobalConflictAnalysis(filePath, data.code, global_variables_list, GlobalConflictData);
             }
         }
+        await Promise.allSettled(analysisPromises);
         for (const [filePath, global_variables_list] of Object.entries(all_files_global_variables_list)) {
             for (const [otherFilePath, otherGlobalVariablesList] of Object.entries(all_files_global_variables_list)) {
                 if (filePath === otherFilePath) {

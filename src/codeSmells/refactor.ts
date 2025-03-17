@@ -47,7 +47,8 @@ export const refactor = async (
                     };
                     const response = await refactorNamingConvention(refactorRequest);
                     if (response.data.success) {
-                        console.log("Refactor successful:", response.data.refactored_code);
+
+                        console.log("Refactor successful:", response.data);
                         const newRefactrData: RefactoringData = {
                             orginal_code: fileContent,
                             refactored_code: response.data.refactored_code,
@@ -82,6 +83,7 @@ export const refactor = async (
                             }
                         }
                         refactorData[filePath].push(newRefactrData);
+                        console.log("Refactor data:", refactorData);
                         return response.data;
                     }
                 }
@@ -114,7 +116,9 @@ export const refactor = async (
                         }
                 if (diagnostic.message.includes("Function was defined but never used") &&
                     "function_names" in data && Array.isArray(data.function_names) && data.function_names.length > 0) {
-                        const name = diagnostic.message.split(" ").shift() || "";
+                        let name = diagnostic.message.split(" ").shift() || "";
+                        // remove the last element from the name
+                        name = name.slice(0, -1);
                         const refactorRequest = {
                             code: updatedCode.refactored_code,
                             entity_name: name,
@@ -127,7 +131,9 @@ export const refactor = async (
                 if ( diagnostic.message.includes("Global Variable was defined but never used") &&
                     "global_variables" in data && Array.isArray(data.global_variables) && data.global_variables.length > 0) {
                     // data.global_variables.forEach(async (name: any) => {
-                        const name = diagnostic.message.split(" ").shift() || "";
+                        
+                        let name = diagnostic.message.split(" ").shift() || "";
+                        name = name.slice(0, -1);
                         const refactorRequest = {
                             code: updatedCode.refactored_code,
                             entity_name: name,
@@ -158,7 +164,7 @@ export const refactor = async (
 
                 const newRefactrData: RefactoringData = {
                     orginal_code: fileContent,
-                    refactored_code: updatedCode,
+                    refactored_code: updatedCode.refactored_code,
                     refactoring_type: "Dead Code",
                     time: new Date(),
                     cascading_refactor: false,
@@ -178,6 +184,7 @@ export const refactor = async (
                     }
                 }
                 refactorData[filePath].push(newRefactrData);
+                return updatedCode;
             }
         }else if (diagnostic.message.includes("Unreachable code")) {
             const uri = vscode.Uri.file(filePath);

@@ -7,6 +7,7 @@ async function getComplexConditionalSmells(
     FileDetectionData: { [key: string]: DetectionResponse }
 ) {
     const ComplexConditionalData: { [key: string]: ComplexConditionalResponse } = {};
+    const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
             continue;
@@ -19,8 +20,19 @@ async function getComplexConditionalSmells(
             };
             continue;
         }
-        await sendFileForComplexConditionalAnalysis(filePath, data.code, ComplexConditionalData);
+        const analysisPromise = sendFileForComplexConditionalAnalysis(filePath, data.code, ComplexConditionalData)
+            .catch((error) => {
+                console.log('Error in file:', filePath);
+                FileDetectionData[filePath] = {
+                    success: false,
+                    error: error.message
+                };
+            });
+        analysisPromises.push(analysisPromise);
+        // await sendFileForComplexConditionalAnalysis(filePath, data.code, ComplexConditionalData);
     }
+
+    await Promise.allSettled(analysisPromises);
 
     for (const [filePath, data] of Object.entries(ComplexConditionalData)) {
         if (!FileDetectionData[filePath]) {
