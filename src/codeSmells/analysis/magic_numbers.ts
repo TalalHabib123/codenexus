@@ -17,6 +17,7 @@ export const getMagicNumberSmells = async (
 
     for (const [filePath, data] of Object.entries(newFiles)) {
         if (!shouldDetectFile(filePath, rulesetsData, 'magic numbers')) {
+            console.log("jfjhih")
             continue;
         }
 
