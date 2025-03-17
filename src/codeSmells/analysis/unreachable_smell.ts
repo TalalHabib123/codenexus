@@ -13,7 +13,7 @@ async function getUnreachableCodeSmells(
     const UnreachableCodeData: { [key: string]: UnreachableResponse } = {};
     const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
-         if (!shouldDetectFile(filePath, rulesetsData, 'unreachable_code')) {
+         if (!shouldDetectFile(filePath, rulesetsData, 'unreachable code')) {
                     continue;
         }
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
