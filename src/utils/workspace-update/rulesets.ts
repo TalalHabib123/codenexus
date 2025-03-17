@@ -1,5 +1,3 @@
-
-
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,10 +20,10 @@ export function createFile(context: vscode.ExtensionContext) {
         }
 
         const jsonContent: Rules = {
-            refactorSmells: ["*"], 
-            detectSmells: ["*"],  
+            refactorSmells: ["*"],
+            detectSmells: ["*"],
             includeFiles: ["*"],
-            excludeFiles: ["*"]
+            excludeFiles: []
         };
 
         fs.writeFile(jsonFilePath, JSON.stringify(jsonContent, null, 2), (err) => {
@@ -69,7 +67,6 @@ function updateRulesetsData(uri: vscode.Uri, RulesetsData: Rules, diagnosticColl
             validateRequiredFields(jsonContent, diagnostics);
             validateCodeSmells(jsonContent, diagnostics, data);
             
-            // Update the RulesetsData reference with the latest values
             Object.assign(RulesetsData, jsonContent);
             console.log('Updated RulesetsData:', RulesetsData);
         } catch (parseError) {
@@ -108,10 +105,10 @@ function validateCodeSmells(jsonContent: Rules, diagnostics: vscode.Diagnostic[]
         "unused variables", "naming convention"
     ];
 
-    ["RefactorSmells", "DetectSmells"].forEach(key => {
+    ["refactorSmells", "detectSmells"].forEach(key => {
         if (Array.isArray(jsonContent[key])) {
             jsonContent[key].forEach(smell => {
-                if (!acceptableCodeSmells.includes(smell.toLowerCase())) {
+                if (typeof smell === 'string' && !acceptableCodeSmells.includes(smell.toLowerCase())) {
                     const { line, col } = findValuePosition(data, smell);
                     diagnostics.push(new vscode.Diagnostic(
                         new vscode.Range(line, col, line, col + smell.length),
@@ -137,11 +134,10 @@ function findValuePosition(data: string, value: string): { line: number, col: nu
 
 function resetRulesetsData(RulesetsData: Rules) {
     Object.assign(RulesetsData, {
-        RefactorSmells: [],
-        DetectSmells: [],
-        IncludeFiles: [],
-        ExcludeFiles: []
+        refactorSmells: [],
+        detectSmells: [],
+        includeFiles: [],
+        excludeFiles: []
     });
     console.log("RulesetsData reset due to file deletion.");
 }
-
