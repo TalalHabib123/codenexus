@@ -36,13 +36,13 @@ let rulesetsData: Rules = {detectSmells: ["*"], refactorSmells: ["*"], includeFi
 
 export async function activate(context: vscode.ExtensionContext) {
 
-    createFile(context);
-    watchRulesetsFile(context, rulesetsData);
+   
+   
     login(context);
 
-console.log("__________________RULESETS DATA __________________");
-console.log(rulesetsData);
-console.log("_____________________________________________________");
+// console.log("__________________RULESETS DATA __________________");
+// console.log(rulesetsData);
+// console.log("_____________________________________________________");
     
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
@@ -91,12 +91,18 @@ console.log("_____________________________________________________");
         statusBarItem.text = "$(sync~spin) Dependency Graph in progress...";
         statusBarItem.show();
         dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
-        console.log("__________________DEPENDENCE GRAPH __________________");
-        console.log(dependencyGraph);
-        console.log("_____________________________________________________");
+        // console.log("__________________DEPENDENCE GRAPH __________________");
+        // console.log(dependencyGraph);
+        // console.log("_____________________________________________________");
 
         statusBarItem.text = "$(sync~spin) Static Analysis in progress...";
         statusBarItem.show();
+    
+        createFile(context);
+        watchRulesetsFile(context,
+            dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData
+    
+        );
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData);
         // Show success message
         statusBarItem.text = "$(check) Analysis complete";
@@ -150,6 +156,7 @@ console.log("_____________________________________________________");
     console.log("__________________FOLDER STRUCTURE DATA __________________");
     console.log(folderStructureData);
     console.log("_____________________________________________________");
+
     statusBarItem.text = "$(check) Analysis complete.Populating Problems Tab...";
     statusBarItem.show();
 
@@ -184,7 +191,7 @@ console.log("_____________________________________________________");
     console.log(runAnalysis);
     const manualCodeProvider = new ManualCodeProvider(context,rulesetsData);
     vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
-    setupRulesetsFileWatcher(context, manualCodeProvider);
+    setupRulesetsFileWatcher(context, manualCodeProvider, dependencyGraph, folders, newFiles);
 
 context.subscriptions.push(
     onRulesetChanged(updatedRulesets => {
@@ -388,32 +395,39 @@ export function triggerRefactoring(
 
 
 
-function setupRulesetsFileWatcher(context: vscode.ExtensionContext, manualCodeProvider: ManualCodeProvider) {
+function setupRulesetsFileWatcher(context: vscode.ExtensionContext, manualCodeProvider: ManualCodeProvider, 
+                                dependencyGraph: { [key: string]: Map<string, FileNode> }, folders: string[], newFiles: { [key: string]: string }) {
     const rulesetsFileWatcher = vscode.workspace.createFileSystemWatcher('**/codenexus-rulesets.json');
     rulesetsFileWatcher.onDidChange(uri => {
-        fs.readFile(uri.fsPath, 'utf8', (err, data) => {
-            if (err) return;
+        fs.readFile(uri.fsPath, 'utf8', async (err, data) => {
+            if (err) {return;};
             try {
                 const updatedRulesets: Rules = JSON.parse(data);
+                rulesetsData = updatedRulesets;
                 manualCodeProvider.updateItems(updatedRulesets);
+                await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData);
             } catch (parseError) {
                 console.error("Error parsing ruleset file:", parseError);
             }
         });
     });
     rulesetsFileWatcher.onDidCreate(uri => {
-        fs.readFile(uri.fsPath, 'utf8', (err, data) => {
-            if (err) return;
+        fs.readFile(uri.fsPath, 'utf8', async (err, data) => {
+            if (err) {return;}
             try {
                 const updatedRulesets: Rules = JSON.parse(data);
+                rulesetsData = updatedRulesets;
                 manualCodeProvider.updateItems(updatedRulesets);
+                await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData);
             } catch (parseError) {
                 console.error("Error parsing ruleset file:", parseError);
             }
         });
     });
-    rulesetsFileWatcher.onDidDelete(() => {
-        manualCodeProvider.updateItems({ detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: ["*"] });
+    rulesetsFileWatcher.onDidDelete(async () => {
+        manualCodeProvider.updateItems({ detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: [] });
+        rulesetsData = { detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: [] };
+        await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData);
     });
     context.subscriptions.push(rulesetsFileWatcher);
 }

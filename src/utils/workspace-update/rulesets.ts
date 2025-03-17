@@ -2,6 +2,9 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Rules, FileSmellConfig } from '../../types/rulesets';
+import { detectCodeSmells } from '../../codeSmells/detection';
+import { FileNode } from "../../types/graph";
+import { CodeResponse, DetectionResponse } from "../../types/api";
 
 export const rulesetChangedEvent = new vscode.EventEmitter<Rules>();
 export const onRulesetChanged = rulesetChangedEvent.event;
@@ -44,30 +47,46 @@ export function createFile(context: vscode.ExtensionContext) {
     vscode.commands.executeCommand('extension.generateJson');
 }
 
-export function watchRulesetsFile(context: vscode.ExtensionContext, RulesetsData: Rules) {
+export function watchRulesetsFile(context: vscode.ExtensionContext,
+    dependencyGraph: { [key: string]: Map<string, FileNode> }, 
+    fileData: { [key: string]: CodeResponse },
+    workspaceFolders: string[],
+    newFiles: { [key: string]: string },
+    FileDetectionData: { [key: string]: DetectionResponse },
+    rulesetsData: Rules
+) {
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('rulesetsDiagnostics');
     context.subscriptions.push(diagnosticCollection);
     
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/codenexus-rulesets.json');
-
-    fileWatcher.onDidChange(uri => updateRulesetsData(uri, RulesetsData, diagnosticCollection));
-    fileWatcher.onDidCreate(uri => updateRulesetsData(uri, RulesetsData, diagnosticCollection));
+    console.log('Watching for changes to codenexus-rulesets.json...');
+    fileWatcher.onDidChange(uri => updateRulesetsData(uri, diagnosticCollection, dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData));
+    fileWatcher.onDidCreate(uri => updateRulesetsData(uri, diagnosticCollection, dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData));
     fileWatcher.onDidDelete(() => {
         diagnosticCollection.clear();
-        resetRulesetsData(RulesetsData);
+        resetRulesetsData(rulesetsData);
         // Emit the ruleset changed event with reset data
-        rulesetChangedEvent.fire(RulesetsData);
+        rulesetChangedEvent.fire(rulesetsData);
     });
 
     context.subscriptions.push(fileWatcher);
 }
 
-function updateRulesetsData(uri: vscode.Uri, RulesetsData: Rules, diagnosticCollection: vscode.DiagnosticCollection) {
+function updateRulesetsData(uri: vscode.Uri,  diagnosticCollection: vscode.DiagnosticCollection,
+    dependencyGraph: { [key: string]: Map<string, FileNode> }, 
+    fileData: { [key: string]: CodeResponse },
+    workspaceFolders: string[],
+    newFiles: { [key: string]: string },
+    FileDetectionData: { [key: string]: DetectionResponse },
+    rulesetsData: Rules
+) {
     console.log('Updating RulesetsData and validating codenexus-rulesets.json...');
     const diagnostics: vscode.Diagnostic[] = [];
     
     fs.readFile(uri.fsPath, 'utf8', (err, data) => {
-        if (err) return;
+        if (err) {
+            console.log('Error reading rulesets file:', err);
+            return;}
 
         try {
             const jsonContent: Rules = JSON.parse(data);
@@ -75,11 +94,12 @@ function updateRulesetsData(uri: vscode.Uri, RulesetsData: Rules, diagnosticColl
             validateCodeSmells(jsonContent, diagnostics, data);
             validateFileConfigs(jsonContent, diagnostics, data);
             
-            Object.assign(RulesetsData, jsonContent);
-            console.log('Updated RulesetsData:', RulesetsData);
+            Object.assign(rulesetsData, jsonContent);
+            console.log('Updated RulesetsData:', rulesetsData);
+            detectCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData);
             
             // Emit the ruleset changed event
-            rulesetChangedEvent.fire(RulesetsData);
+            rulesetChangedEvent.fire(rulesetsData);
         } catch (parseError) {
             diagnostics.push(new vscode.Diagnostic(
                 new vscode.Range(0, 0, 0, 10),

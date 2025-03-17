@@ -1,14 +1,21 @@
 import { sendFileForTemporaryFieldAnalysis } from "../../utils/api/temporary_field_api";
 import { CodeResponse, DetectionResponse, TemporaryVariableResponse } from "../../types/api";
+import { shouldDetectFile } from "../../utils/workspace-update/ruleset_checks";
+import { Rules } from '../../types/rulesets';
+
 
 async function getTemporaryFieldSmells(
     fileData: { [key: string]: CodeResponse },
     newFiles: { [key: string]: string },
-    FileDetectionData: { [key: string]: DetectionResponse }
+    FileDetectionData: { [key: string]: DetectionResponse },
+    rulesetsData: Rules
 ) {
     const TemporaryFieldData: { [key: string]: TemporaryVariableResponse } = {};
     const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
+        if (!shouldDetectFile(filePath, rulesetsData, 'temporary_field')) {
+                            continue;
+        }
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
             continue;
         }

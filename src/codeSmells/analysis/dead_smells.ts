@@ -1,6 +1,10 @@
 import { FileNode } from "../../types/graph";
 import { CodeResponse, DeadCodeResponse, DeadClassResponse, DetectionResponse } from "../../types/api";
 import { sendFileForDeadCodeAnalysis, getClassDeadSmells } from "../../utils/api/dead_code_api";
+import { shouldDetectFile } from "../../utils/workspace-update/ruleset_checks";
+import {Rules} from "../../types/rulesets";
+
+
 
 function separate_files(workspaceFolder: string, fileData: { [key: string]: CodeResponse }) {
     const files: { [key: string]: CodeResponse } = {};
@@ -17,7 +21,8 @@ async function getDeadCodeSmells(
     fileData: { [key: string]: CodeResponse },
     workspaceFolders: string[],
     newFiles: { [key: string]: string },
-    FileDetectionData: { [key: string]: DetectionResponse }
+    FileDetectionData: { [key: string]: DetectionResponse },
+    rulesetsData: Rules
 ) {
     const DeadCodeData: { [key: string]: DeadCodeResponse } = {};
     for (const [filePath, data] of Object.entries(FileDetectionData)) {
@@ -27,6 +32,10 @@ async function getDeadCodeSmells(
     }
     const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
+
+        if (!shouldDetectFile(filePath,  rulesetsData, 'dead code')) {
+            continue;
+        }
         if (data.error || !data.code || data.code === "") {
             console.log('Error in file:', filePath);    
             DeadCodeData[filePath] = {

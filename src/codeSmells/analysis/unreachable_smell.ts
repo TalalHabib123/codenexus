@@ -1,14 +1,21 @@
 import { sendFileForUnreachableCodeAnalysis } from "../../utils/api/unreachable_code_api";
 import { CodeResponse, DetectionResponse, UnreachableResponse } from "../../types/api";
+import { shouldDetectFile } from "../../utils/workspace-update/ruleset_checks";
+import { Rules } from '../../types/rulesets';
+
 
 async function getUnreachableCodeSmells(
     fileData: { [key: string]: CodeResponse },
     newFiles: { [key: string]: string },
-    FileDetectionData: { [key: string]: DetectionResponse }
+    FileDetectionData: { [key: string]: DetectionResponse },
+    rulesetsData: any,
 ) {
     const UnreachableCodeData: { [key: string]: UnreachableResponse } = {};
     const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
+         if (!shouldDetectFile(filePath, rulesetsData, 'unreachable_code')) {
+                    continue;
+        }
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
             continue;
         }

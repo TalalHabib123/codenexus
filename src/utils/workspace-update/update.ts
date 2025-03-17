@@ -5,7 +5,9 @@ import { FileNode } from '../../types/graph';
 import { detectCodeSmells } from '../../codeSmells/detection';
 import { CodeResponse, DetectionResponse } from '../../types/api';
 import { showCodeSmellsInProblemsTab } from '../ui/problemsTab';
-import { Rules, FileSmellConfig } from '../../types/rulesets';
+import { Rules } from '../../types/rulesets';
+import * as path from 'path';
+
 
 export const fileWatcherEventHandler = (
   context: vscode.ExtensionContext,
@@ -60,57 +62,8 @@ export const fileWatcherEventHandler = (
   });
 };
 
-/**
- * Determines if any smell should be checked for a specific file
- * @param filePath The path of the file
- * @param rulesetsData The ruleset configuration
- * @returns boolean indicating if any smell should be checked
- */
-function shouldCheckFile(filePath: string, rulesetsData: Rules): boolean {
-  // Check if file is in excludeFiles with wildcard
-  const hasWildcardExclusion = rulesetsData.excludeFiles.some(
-    item => typeof item === 'string' && item === '*'
-  );
-  
-  // Check if file is specifically excluded
-  const isSpecificallyExcluded = rulesetsData.excludeFiles.some(
-    item => typeof item === 'string' && item === filePath
-  );
-  
-  // Check if file has any specific smell exclusions (we'll allow checking other smells)
-  const hasSpecificExclusions = rulesetsData.excludeFiles.some(
-    item => typeof item === 'object' && (item as FileSmellConfig).path === filePath
-  );
-  
-  // If file is completely excluded (not just specific smells)
-  if (isSpecificallyExcluded || (hasWildcardExclusion && !hasSpecificExclusions)) {
-    // Check if it's specifically included despite exclusion
-    const isSpecificallyIncluded = rulesetsData.includeFiles.some(
-      item => typeof item === 'string' && item === filePath
-    );
-    
-    const hasSpecificInclusions = rulesetsData.includeFiles.some(
-      item => typeof item === 'object' && (item as FileSmellConfig).path === filePath
-    );
-    
-    return isSpecificallyIncluded || hasSpecificInclusions;
-  }
-  
-  // If not completely excluded, check if it's included
-  const hasWildcardInclusion = rulesetsData.includeFiles.some(
-    item => typeof item === 'string' && item === '*'
-  );
-  
-  const isSpecificallyIncluded = rulesetsData.includeFiles.some(
-    item => typeof item === 'string' && item === filePath
-  );
-  
-  const hasSpecificInclusions = rulesetsData.includeFiles.some(
-    item => typeof item === 'object' && (item as FileSmellConfig).path === filePath
-  );
-  
-  return hasWildcardInclusion || isSpecificallyIncluded || hasSpecificInclusions;
-}
+
+
 
 async function checkCompilable(
   filePath: string,
@@ -126,15 +79,6 @@ async function checkCompilable(
     return;
   }
   
-  // Check if the file should be analyzed based on ruleset configuration
-  if (!shouldCheckFile(filePath, rulesetsData)) {
-    console.log(`Skipping file based on ruleset configuration: ${filePath}`);
-    
-    // Remove any existing diagnostics for this file
-    diagnosticCollection.delete(vscode.Uri.file(filePath));
-    return;
-  }
-
   const command = `python -m py_compile "${filePath}"`;
 
   exec(command, async (error, stdout, stderr) => {

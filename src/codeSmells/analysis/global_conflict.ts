@@ -1,5 +1,8 @@
 import { sendFileForGlobalConflictAnalysis } from "../../utils/api/global_conflict_api";
 import { CodeResponse, DetectionResponse, VariableConflictResponse } from "../../types/api";
+import { shouldDetectFile } from "../../utils/workspace-update/ruleset_checks";
+import { Rules } from '../../types/rulesets';
+
 
 function separate_files(workspaceFolder: string, fileData: { [key: string]: CodeResponse }) {
     const files: { [key: string]: CodeResponse } = {};
@@ -15,7 +18,8 @@ async function getGlobalConflictSmells(
     fileData: { [key: string]: CodeResponse },
     newFiles: { [key: string]: string },
     workspaceFolders: string[],
-    FileDetectionData: { [key: string]: DetectionResponse }
+    FileDetectionData: { [key: string]: DetectionResponse }, 
+    rulesetsData: Rules
 ) {
     const GlobalConflictData: { [key: string]: VariableConflictResponse } = {};
     for (const folder of workspaceFolders) {
@@ -23,6 +27,10 @@ async function getGlobalConflictSmells(
         const all_files_global_variables_list: { [key: string]: string[] } = {};
         const analysisPromises = [];
         for (const [filePath, data] of Object.entries(files)) {
+            if (!shouldDetectFile(filePath, rulesetsData, 'global_conflict')) {
+                continue;
+            }
+            
             if (!Object.keys(newFiles).some((key) => key === filePath)) {
                 continue;
             }
