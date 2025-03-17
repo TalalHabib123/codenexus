@@ -13,7 +13,7 @@ async function getTemporaryFieldSmells(
     const TemporaryFieldData: { [key: string]: TemporaryVariableResponse } = {};
     const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
-        if (!shouldDetectFile(filePath, rulesetsData, 'temporary_field')) {
+        if (!shouldDetectFile(filePath, rulesetsData, 'temporary field')) {
                             continue;
         }
         if (!Object.keys(newFiles).some((key) => key === filePath)) {

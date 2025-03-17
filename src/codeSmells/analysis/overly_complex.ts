@@ -13,7 +13,7 @@ async function getComplexConditionalSmells(
     const ComplexConditionalData: { [key: string]: ComplexConditionalResponse } = {};
     const analysisPromises = [];
     for (const [filePath, data] of Object.entries(fileData)) {
-        if (!shouldDetectFile(filePath, rulesetsData, 'overly_complex')) {
+        if (!shouldDetectFile(filePath, rulesetsData, 'overly complex conditional statements')) {
                     continue;
         }
 

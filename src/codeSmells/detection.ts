@@ -33,10 +33,10 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
             getComplexConditionalSmells(fileData, newFiles, FileDetectionData, rulesetsData),
             getGlobalConflictSmells(fileData, newFiles, workspaceFolders, FileDetectionData, rulesetsData),
             getMagicNumberSmells(fileData, newFiles, FileDetectionData, rulesetsData),
-            // getParameterListSmells(fileData, newFiles, FileDetectionData, rulesetsData),
-            // getUnusedVarSmells(fileData, newFiles, FileDetectionData, rulesetsData),
-            // getNamingConventionSmells(fileData, newFiles, FileDetectionData, rulesetsData),
-            // getDuplicateCodeSmells(fileData, newFiles, FileDetectionData, rulesetsData)
+            getParameterListSmells(fileData, newFiles, FileDetectionData, rulesetsData),
+            getUnusedVarSmells(fileData, newFiles, FileDetectionData, rulesetsData),
+            getNamingConventionSmells(fileData, newFiles, FileDetectionData, rulesetsData),
+            getDuplicateCodeSmells(fileData, newFiles, FileDetectionData, rulesetsData)
 
         ];
         await Promise.all(detect);

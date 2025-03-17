@@ -1,13 +1,20 @@
 import { detectDuplicateCode } from "../../utils/api/duplicate_smells_api";
 import { CodeResponse, DetectionResponse } from "../../types/api";
+import { Rules } from "../../types/rulesets";
+import { shouldDetectFile } from "../../utils/workspace-update/ruleset_checks"; 
 
 export const getDuplicateCodeSmells = async (
     fileData: { [key: string]: CodeResponse },
     newFiles: { [key: string]: string },
-    FileDetectionData: { [key: string]: DetectionResponse }) => {
+    FileDetectionData: { [key: string]: DetectionResponse },
+    rulesetsData: Rules
+) => {
     const DetectionData: { [key: string]: any } = {};
     const analysisPromises = [];
     for (const [filePath, data] of Object.entries(newFiles)) {
+        if (!shouldDetectFile(filePath, rulesetsData, 'duplicated code')) {
+            continue;
+        }
         if (!Object.keys(newFiles).some((key) => key === filePath)) {
             continue;
         }

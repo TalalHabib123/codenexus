@@ -44,7 +44,7 @@
           "name": "Trigger Code Analysis"
         },
         {
-          "id": "authView", 
+          "id": "authView",
           "name": "Authentication",
           "type": "webview"
         }

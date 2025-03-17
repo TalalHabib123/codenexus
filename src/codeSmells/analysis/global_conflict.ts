@@ -27,7 +27,7 @@ async function getGlobalConflictSmells(
         const all_files_global_variables_list: { [key: string]: string[] } = {};
         const analysisPromises = [];
         for (const [filePath, data] of Object.entries(files)) {
-            if (!shouldDetectFile(filePath, rulesetsData, 'global_conflict')) {
+            if (!shouldDetectFile(filePath, rulesetsData, 'global variables conflict')) {
                 continue;
             }
             
