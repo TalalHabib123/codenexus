@@ -254,7 +254,7 @@ export async function activate(context: vscode.ExtensionContext) {
 async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
     statusBarItem.text = "$(sync~spin) Detection in progress...";
-    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData);
+    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData,rulesetsData);
     statusBarItem.text = "$(check) Detection complete";
 
 }
