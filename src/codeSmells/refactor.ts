@@ -13,6 +13,7 @@ import { sendFileForUnreachableCodeAnalysis } from '../utils/refactor_api/unreac
 import { refactorMagicNumbers } from '../utils/refactor_api/magic_number_api';
 import { refactorUnusedVars } from '../utils/refactor_api/unused_var_api';
 import { randomUUID } from 'crypto';
+import { triggerRefactoring } from '../extension';
 
 
 export const refactor = async (
@@ -20,7 +21,8 @@ export const refactor = async (
     filePath: string, // Path to the file being refactored
     dependencyGraph: { [key: string]: Map<string, FileNode> }, // Nested dependency graph
     FileDetectionData: { [key: string]: DetectionResponse }, // Detection data
-    refactorData: { [key: string]: Array<RefactoringData> } // Refactor data
+    refactorData: { [key: string]: Array<RefactoringData> }, // Refactor data
+    context: vscode.ExtensionContext
 ): Promise<RefactorResponse | undefined> => {
     try {
         const message = diagnostic.message;
@@ -327,6 +329,24 @@ export const refactor = async (
             }
             return response.data; 
         }
+               
+        else if(diagnostic.message.includes("God object")) {
+            const uri = vscode.Uri.file(filePath);
+            const fileData = await vscode.workspace.fs.readFile(uri);
+            let fileContent = new TextDecoder().decode(fileData);
+            console.log(FileDetectionData[filePath]);
+            console.log(FileDetectionData[filePath]?.user_triggered_detection);
+            let refactorName:string = "" ;
+            const arr = diagnostic.message.split(" ");
+            while (refactorName === "") {
+                let str = arr.pop();
+                if (typeof str === "string" && str.length > 0) {
+                    refactorName = str;
+                }
+            }
+            triggerRefactoring("god_object", filePath, refactorName, context);
+        }
+
 
     } catch (e) {
         console.error("Error in refactoring:", e);

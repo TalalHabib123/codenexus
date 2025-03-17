@@ -47,9 +47,11 @@ export class ManualCodeProvider implements vscode.TreeDataProvider<ManualCodeIte
         if (item.ticked) {
             // Trigger code smell detection if the item is ticked
             triggerCodeSmellDetection(item.label, this.context);
+
         } else {
             // Handle unticking by fetching FileDetectionData
             const FileDetectionData = this.context.workspaceState.get('FileDetectionData', {});
+         
             if (FileDetectionData) {
                 const diagnosticCollection = this.context.subscriptions.find(
                     (sub): sub is vscode.DiagnosticCollection => 'set' in sub && 'delete' in sub && 'clear' in sub

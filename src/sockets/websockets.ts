@@ -59,6 +59,7 @@ function establishWebSocketConnection(codeSmell: string,
     file: string = '',
     additonalData: any = null,
 ) {
+
     let taskData;
     if (taskType === 'detection') {
         taskData = detectionTaskDataGenerator(fileData, taskType, detectionHelper[taskJob]);
@@ -88,6 +89,7 @@ function establishWebSocketConnection(codeSmell: string,
                     status.show();
                 }
                 if (message.task_status === 'success') {
+                    console.log("HELDJIWJDIJWIJDIW");
                     status.text = "$(check) Analysis complete:Data processed";
                     status.show();
                     vscode.window.showInformationMessage(`Task completed`);

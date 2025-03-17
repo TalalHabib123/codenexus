@@ -201,7 +201,7 @@ export async function activate(context: vscode.ExtensionContext) {
             const filePath = editor.document.uri.fsPath;
             try {
                 // Send diagnostic to the backend
-                const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData, refactorData);
+                const refactoredCode = await refactor(diagnostic, filePath, dependencyGraph, FileDetectionData, refactorData, context);
                 console.log("__________________REFRACTORED CODE __________________");
                 console.log(refactoredCode);
                 console.log("_____________________________________________________");
@@ -354,11 +354,15 @@ export function triggerCodeSmellDetection(
 ): void {
 
     establishWebSocketConnection(codeSmell, ws, fileData, FileDetectionData, 'detection', codeSmell, diagnosticCollection, context);
-    console.log("HELLLOO ME HERE");
-    if (! (!ws || ws.readyState !== WebSocket.OPEN)) {
-        console.log("websocket state: ", ws.readyState);
-        console.log("__________________FILE DETECTION DATA in trigger __________________");   
-        console.log(FileDetectionData);
-        console.log("_____________________________________________________");
-    }
+   
+}
+
+
+export function triggerRefactoring(
+    codeSmell: string, 
+    file: string,
+    additionalData: any = null,
+    context: vscode.ExtensionContext
+): void {
+    establishWebSocketConnection(codeSmell, ws, fileData, FileDetectionData, 'refactoring', codeSmell, diagnosticCollection, context, file, additionalData);
 }
