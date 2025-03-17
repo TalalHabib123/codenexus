@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Rules } from '../../types/rulesets';
+import { Rules, FileSmellConfig } from '../../types/rulesets';
+
+export const rulesetChangedEvent = new vscode.EventEmitter<Rules>();
+export const onRulesetChanged = rulesetChangedEvent.event;
 
 export function createFile(context: vscode.ExtensionContext) {
     let disposable = vscode.commands.registerCommand('extension.generateJson', async () => {
@@ -31,6 +34,8 @@ export function createFile(context: vscode.ExtensionContext) {
                 vscode.window.showErrorMessage(`Failed to create JSON file: ${err.message}`);
             } else {
                 vscode.window.showInformationMessage(`JSON file created at ${jsonFilePath}`);
+                // Emit the ruleset changed event
+                rulesetChangedEvent.fire(jsonContent);
             }
         });
     });
@@ -50,6 +55,8 @@ export function watchRulesetsFile(context: vscode.ExtensionContext, RulesetsData
     fileWatcher.onDidDelete(() => {
         diagnosticCollection.clear();
         resetRulesetsData(RulesetsData);
+        // Emit the ruleset changed event with reset data
+        rulesetChangedEvent.fire(RulesetsData);
     });
 
     context.subscriptions.push(fileWatcher);
@@ -66,9 +73,13 @@ function updateRulesetsData(uri: vscode.Uri, RulesetsData: Rules, diagnosticColl
             const jsonContent: Rules = JSON.parse(data);
             validateRequiredFields(jsonContent, diagnostics);
             validateCodeSmells(jsonContent, diagnostics, data);
+            validateFileConfigs(jsonContent, diagnostics, data);
             
             Object.assign(RulesetsData, jsonContent);
             console.log('Updated RulesetsData:', RulesetsData);
+            
+            // Emit the ruleset changed event
+            rulesetChangedEvent.fire(RulesetsData);
         } catch (parseError) {
             diagnostics.push(new vscode.Diagnostic(
                 new vscode.Range(0, 0, 0, 10),
@@ -121,12 +132,69 @@ function validateCodeSmells(jsonContent: Rules, diagnostics: vscode.Diagnostic[]
     });
 }
 
+function validateFileConfigs(jsonContent: Rules, diagnostics: vscode.Diagnostic[], data: string) {
+    ["includeFiles", "excludeFiles"].forEach(key => {
+        if (Array.isArray(jsonContent[key])) {
+            jsonContent[key].forEach(item => {
+                if (typeof item === 'object' && item !== null) {
+                    // Validate FileSmellConfig objects
+                    const config = item as FileSmellConfig;
+                    
+                    // Check if path property exists
+                    if (!config.path) {
+                        diagnostics.push(new vscode.Diagnostic(
+                            new vscode.Range(0, 0, 0, 10),
+                            `Missing 'path' property in ${key} configuration object`,
+                            vscode.DiagnosticSeverity.Error
+                        ));
+                    }
+                    
+                    // Check if smells property exists and is an array
+                    if (!config.smells || !Array.isArray(config.smells)) {
+                        diagnostics.push(new vscode.Diagnostic(
+                            new vscode.Range(0, 0, 0, 10),
+                            `Missing or invalid 'smells' array in ${key} configuration object for path: ${config.path}`,
+                            vscode.DiagnosticSeverity.Error
+                        ));
+                    } else {
+                        // Validate each smell in the array
+                        validateConfigSmells(config, key, diagnostics, data);
+                    }
+                }
+            });
+        }
+    });
+}
+
+function validateConfigSmells(config: FileSmellConfig, fileListType: string, diagnostics: vscode.Diagnostic[], data: string) {
+    const acceptableCodeSmells = [
+        "*", "long functions", "long parameter list", "too many nested loops",
+        "overly complex conditional statements", "god object", "switch statement abuser",
+        "temporary field", "over-encapsulation", "dead code", "duplicated code",
+        "unreachable code", "duplicated logic", "comments as code", "feature envy",
+        "middle man", "inappropriate intimacy", "magic numbers",
+        "variables naming notation", "global variables conflict", "excessive use of flags", 
+        "unused variables", "naming convention"
+    ];
+
+    config.smells.forEach(smell => {
+        if (typeof smell === 'string' && !acceptableCodeSmells.includes(smell.toLowerCase())) {
+            const { line, col } = findValuePosition(data, smell);
+            diagnostics.push(new vscode.Diagnostic(
+                new vscode.Range(line, col, line, col + smell.length),
+                `Invalid code smell '${smell}' in ${fileListType} configuration for path: ${config.path}`,
+                vscode.DiagnosticSeverity.Error
+            ));
+        }
+    });
+}
+
 function findValuePosition(data: string, value: string): { line: number, col: number } {
     const lines = data.split("\n");
     for (let i = 0; i < lines.length; i++) {
         const col = lines[i].indexOf(`"${value}"`);
         if (col !== -1) {
-            return { line: i, col };
+            return { line: i, col: col + 1 }; // +1 to position after the opening quote
         }
     }
     return { line: 0, col: 0 };
@@ -134,9 +202,9 @@ function findValuePosition(data: string, value: string): { line: number, col: nu
 
 function resetRulesetsData(RulesetsData: Rules) {
     Object.assign(RulesetsData, {
-        refactorSmells: [],
-        detectSmells: [],
-        includeFiles: [],
+        refactorSmells: ["*"],
+        detectSmells: ["*"],
+        includeFiles: ["*"],
         excludeFiles: []
     });
     console.log("RulesetsData reset due to file deletion.");

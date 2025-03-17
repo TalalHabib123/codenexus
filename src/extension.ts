@@ -8,6 +8,7 @@ import { buildDependencyGraph } from './utils/codebase_analysis/graph/dependency
 import { detectCodeSmells } from './codeSmells/detection';
 import { fileWatcherEventHandler } from './utils/workspace-update/update';
 import WebSocket from 'ws';
+import * as fs from 'fs';
 import { createFolderStructureProvider } from './utils/ui/problemsTab';
 import { showCodeSmellsInProblemsTab } from './utils/ui/problemsTab';
 import { detectedCodeSmells } from './utils/ui/problemsTab';
@@ -22,6 +23,7 @@ import { userTriggeredcodesmell } from './utils/ui/problemsTab';
 import { createFile, watchRulesetsFile } from './utils/workspace-update/rulesets';
 import { Rules } from './types/rulesets';
 import { login } from './utils/ui/login';
+import { onRulesetChanged } from './utils/workspace-update/rulesets'; 
 
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
@@ -38,7 +40,9 @@ export async function activate(context: vscode.ExtensionContext) {
     watchRulesetsFile(context, rulesetsData);
     login(context);
 
-
+console.log("__________________RULESETS DATA __________________");
+console.log(rulesetsData);
+console.log("_____________________________________________________");
     
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
@@ -175,9 +179,18 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(runAnalysis);
-    const manualCodeProvider = new ManualCodeProvider(context);
+    console.log("=====================================");
+    console.log("Run Analysis");
+    console.log(runAnalysis);
+    const manualCodeProvider = new ManualCodeProvider(context,rulesetsData);
     vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
+    setupRulesetsFileWatcher(context, manualCodeProvider);
 
+context.subscriptions.push(
+    onRulesetChanged(updatedRulesets => {
+        manualCodeProvider.updateItems(updatedRulesets);
+    })
+);
     context.subscriptions.push(
         vscode.commands.registerCommand('manualCodeView.toggleTick', (item: ManualCodeItem) => {
             manualCodeProvider.toggleCodeSmell(item);
@@ -254,10 +267,11 @@ export async function activate(context: vscode.ExtensionContext) {
 async function RefreshDetection(context: vscode.ExtensionContext, folders: string[], allFiles: { [key: string]: string }) {
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
     statusBarItem.text = "$(sync~spin) Detection in progress...";
-    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData,rulesetsData);
+    await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData, rulesetsData);
     statusBarItem.text = "$(check) Detection complete";
 
 }
+
 
 function removeDiagnostic(filePath: string, diagnostic: vscode.Diagnostic): void {
     // Convert filePath string to vscode.Uri
@@ -366,4 +380,36 @@ export function triggerCodeSmellDetection(
         console.log(FileDetectionData);
         console.log("_____________________________________________________");
     }
+}
+
+
+
+function setupRulesetsFileWatcher(context: vscode.ExtensionContext, manualCodeProvider: ManualCodeProvider) {
+    const rulesetsFileWatcher = vscode.workspace.createFileSystemWatcher('**/codenexus-rulesets.json');
+    rulesetsFileWatcher.onDidChange(uri => {
+        fs.readFile(uri.fsPath, 'utf8', (err, data) => {
+            if (err) return;
+            try {
+                const updatedRulesets: Rules = JSON.parse(data);
+                manualCodeProvider.updateItems(updatedRulesets);
+            } catch (parseError) {
+                console.error("Error parsing ruleset file:", parseError);
+            }
+        });
+    });
+    rulesetsFileWatcher.onDidCreate(uri => {
+        fs.readFile(uri.fsPath, 'utf8', (err, data) => {
+            if (err) return;
+            try {
+                const updatedRulesets: Rules = JSON.parse(data);
+                manualCodeProvider.updateItems(updatedRulesets);
+            } catch (parseError) {
+                console.error("Error parsing ruleset file:", parseError);
+            }
+        });
+    });
+    rulesetsFileWatcher.onDidDelete(() => {
+        manualCodeProvider.updateItems({ detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: ["*"] });
+    });
+    context.subscriptions.push(rulesetsFileWatcher);
 }
