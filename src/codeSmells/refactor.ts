@@ -14,6 +14,9 @@ import { refactorMagicNumbers } from '../utils/refactor_api/magic_number_api';
 import { refactorUnusedVars } from '../utils/refactor_api/unused_var_api';
 import { randomUUID } from 'crypto';
 import { triggerRefactoring } from '../extension';
+import { refactorLogs } from '../utils/api/log_api/refactor_logs';
+import path from 'path';
+
 
 
 export const refactor = async (
@@ -85,6 +88,8 @@ export const refactor = async (
                             }
                         }
                         refactorData[filePath].push(newRefactrData);
+                        const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
+                        refactorLogs(filePath, newRefactrData, path.basename(root));
                         console.log("Refactor data:", refactorData);
                         return response.data;
                     }
@@ -186,6 +191,8 @@ export const refactor = async (
                     }
                 }
                 refactorData[filePath].push(newRefactrData);
+                const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
+                refactorLogs(filePath, newRefactrData, path.basename(root));
                 return updatedCode;
             }
         }else if (diagnostic.message.includes("Unreachable code")) {
@@ -223,6 +230,7 @@ export const refactor = async (
                         success: true,
                         error: "",
                     };
+                    
                     if (!refactorData[filePath]) {
                         refactorData[filePath] = [];
                     }
@@ -232,6 +240,8 @@ export const refactor = async (
                         }
                     }
                     refactorData[filePath].push(newRefactrData);
+                    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
+                        refactorLogs(filePath, newRefactrData, path.basename(root));
                 }
                 return refactoredCode || undefined;
             }
@@ -285,6 +295,8 @@ export const refactor = async (
                     }
                 }
                 refactorData[filePath].push(newRefactrData);
+                const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
+                refactorLogs(filePath, newRefactrData, path.basename(root));
             }
             return response.data;
 
@@ -326,6 +338,8 @@ export const refactor = async (
                     }
                 }
                 refactorData[filePath].push(newRefactrData);
+                const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
+                refactorLogs(filePath, newRefactrData, path.basename(root));
             }
             return response.data; 
         }
