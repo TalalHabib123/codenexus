@@ -37,7 +37,7 @@ let rulesetsData: Rules = {detectSmells: ["*"], refactorSmells: ["*"], includeFi
 export async function activate(context: vscode.ExtensionContext) {
 
    
-   
+    createFile(context);
     login(context);
 
 // console.log("__________________RULESETS DATA __________________");
@@ -98,7 +98,7 @@ export async function activate(context: vscode.ExtensionContext) {
         statusBarItem.text = "$(sync~spin) Static Analysis in progress...";
         statusBarItem.show();
     
-        createFile(context);
+        
         watchRulesetsFile(context,
             dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData
     

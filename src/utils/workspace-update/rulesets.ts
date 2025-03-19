@@ -5,7 +5,7 @@ import { Rules, FileSmellConfig } from '../../types/rulesets';
 import { detectCodeSmells } from '../../codeSmells/detection';
 import { FileNode } from "../../types/graph";
 import { CodeResponse, DetectionResponse } from "../../types/api";
-
+import { createProject } from '../api/log_api/createProject';
 export const rulesetChangedEvent = new vscode.EventEmitter<Rules>();
 export const onRulesetChanged = rulesetChangedEvent.event;
 
@@ -36,9 +36,11 @@ export function createFile(context: vscode.ExtensionContext) {
             if (err) {
                 vscode.window.showErrorMessage(`Failed to create JSON file: ${err.message}`);
             } else {
+                createProject({ title: path.basename(rootPath), description: 'New project created' });
                 vscode.window.showInformationMessage(`JSON file created at ${jsonFilePath}`);
                 // Emit the ruleset changed event
                 rulesetChangedEvent.fire(jsonContent);
+                
             }
         });
     });

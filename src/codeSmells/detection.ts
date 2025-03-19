@@ -11,8 +11,9 @@ import { getUnusedVarSmells } from "./analysis/unused_var_smell";
 import { getNamingConventionSmells } from "./analysis/naming_convention";
 import { getDuplicateCodeSmells } from "./analysis/duplicate_smells";
 import { Rules } from '../types/rulesets';
+import { detectionLog } from "../utils/api/log_api/detection_logs"
 import * as path from 'path';
-
+import * as vscode from 'vscode';
 
 
 
@@ -41,6 +42,11 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
         ];
         await Promise.all(detect);
         console.log(FileDetectionData);
+         const workspace = vscode.workspace.workspaceFolders;
+         if(workspace === undefined){
+             throw new Error('No workspace folders found');
+         }
+        detectionLog(FileDetectionData,  path.basename(workspace[0].uri.fsPath), 'General', 'automatic');
     }
     catch(err){
         console.error('Error during detection:', err);
