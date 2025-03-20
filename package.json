@@ -12,8 +12,6 @@
   ],
   "activationEvents": [
     "*"
-   
-
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -138,7 +136,9 @@
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
     "@types/node": "20.x",
+    "@types/polka": "^0.5.7",
     "@types/vscode": "^1.92.0",
     "@types/ws": "^8.5.13",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
@@ -150,8 +150,11 @@
   },
   "dependencies": {
     "axios": "^1.7.9",
+    "body-parser": "^1.20.3",
     "codenexus": "file:",
+    "cors": "^2.8.5",
     "node-fetch": "^3.3.2",
+    "polka": "^0.5.2",
     "uuid": "^11.1.0",
     "ws": "^8.18.0"
   }

@@ -6,6 +6,7 @@ import { detectCodeSmells } from '../../codeSmells/detection';
 import { FileNode } from "../../types/graph";
 import { CodeResponse, DetectionResponse } from "../../types/api";
 import { createProject } from '../api/log_api/createProject';
+import { rulesetsLog } from '../api/log_api/rulesets';
 export const rulesetChangedEvent = new vscode.EventEmitter<Rules>();
 export const onRulesetChanged = rulesetChangedEvent.event;
 
@@ -25,6 +26,10 @@ export function createFile(context: vscode.ExtensionContext) {
         }
 
         const rootPath = workspaceFolders[0].uri.fsPath;
+        if (!rootPath) {
+            vscode.window.showErrorMessage('No root path found.');
+            return;
+        }
         const jsonFilePath = path.join(rootPath, 'codenexus-rulesets.json');
         const workspaceKey = getWorkspaceKey();
 
@@ -64,6 +69,9 @@ export function createFile(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`JSON file created at ${jsonFilePath}`);
                 // Emit the ruleset changed event
                 context.workspaceState.update('rulesetsData', jsonContent);
+                const workspace = vscode.workspace.workspaceFolders;
+                if (!workspace) return;
+                rulesetsLog(path.basename(rootPath), jsonContent);
                 rulesetChangedEvent.fire(jsonContent);
             }
         });
@@ -126,11 +134,14 @@ function updateRulesetsData(uri: vscode.Uri,
             validateCodeSmells(jsonContent, diagnostics, data);
             validateFileConfigs(jsonContent, diagnostics, data);
             
-            Object.assign(rulesetsData, jsonContent);
+            rulesetsData = jsonContent;
             context.workspaceState.update('rulesetsData', rulesetsData);
             console.log('Updated RulesetsData:', rulesetsData);
             detectCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData, context);
-            
+            const workspace = vscode.workspace.workspaceFolders;
+            if (!workspace) return;
+            const rootPath = workspace[0].uri.fsPath;
+            rulesetsLog(path.basename(rootPath), rulesetsData);
             // Emit the ruleset changed event
             rulesetChangedEvent.fire(rulesetsData);
         } catch (parseError) {
@@ -262,4 +273,8 @@ function resetRulesetsData(RulesetsData: Rules, context: vscode.ExtensionContext
     });
     context.workspaceState.update('rulesetsData', RulesetsData);
     console.log("RulesetsData reset due to file deletion.");
+    const workspace = vscode.workspace.workspaceFolders;
+    if (!workspace) return;
+    const rootPath = workspace[0].uri.fsPath;
+    rulesetsLog(path.basename(rootPath), RulesetsData);
 }

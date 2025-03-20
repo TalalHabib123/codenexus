@@ -343,6 +343,7 @@ function buildDependencyGraph(
         graph[folder] = folderGraph;
     }
     const root= vscode.workspace.workspaceFolders?.[0].uri.fsPath || "";
+    console.log(root);
     dependencyGraphLog(path.basename(root), graph);
     return graph;
 }

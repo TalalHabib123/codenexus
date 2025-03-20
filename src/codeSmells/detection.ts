@@ -15,7 +15,8 @@ import { detectionLog } from "../utils/api/log_api/detection_logs";
 import { shouldDetectFile } from "../utils/workspace-update/ruleset_checks";
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { showProblemsTab } from "../utils/ui/problemsTab";
+import { showCodeSmellsInProblemsTab } from "../utils/ui/problemsTab";
+import { diagnosticCollection } from "../extension";
 
 export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<string, FileNode> }, 
     fileData: { [key: string]: CodeResponse },
@@ -91,8 +92,11 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
         if (workspace === undefined) {
             throw new Error('No workspace folders found');
         }
-        context.workspaceState.update('FileDetectionData', detectionData);
+        Object.assign(FileDetectionData, detectionData);
+        context.workspaceState.update('FileDetectionData', FileDetectionData);
         detectionLog(detectionData, path.basename(workspace[0].uri.fsPath), 'General', 'automatic');
+        showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
+
         
     }
     catch(err) {

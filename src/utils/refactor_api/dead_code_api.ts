@@ -7,7 +7,7 @@ async function refactorDeadCode(
     content: DeadCodeRefactorRequest) {
     try {
         const response = await axios.post<RefactorResponse>(`${BASE_URL}/refactor/dead-code`, content);
-        return response
+        return response;
     } catch (e) {
         return;
     }

@@ -24,18 +24,19 @@ import { createFile, watchRulesetsFile } from './utils/workspace-update/rulesets
 import { Rules } from './types/rulesets';
 import { login } from './utils/ui/login';
 import { onRulesetChanged } from './utils/workspace-update/rulesets';
+import { auth } from './auth/auth';
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
 let folderStructureData: { [key: string]: FolderStructure } = {};
 let statusBarItem: vscode.StatusBarItem;
-let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
+export let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
 let refactorData: { [key: string]: Array<RefactoringData> } = {};
 let rulesetsData: Rules = {detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: []};
 
 export async function activate(context: vscode.ExtensionContext) {
 
-
+    auth(context);
     createFile(context);
     login(context);
     // mainAuth(context);
@@ -81,7 +82,10 @@ export async function activate(context: vscode.ExtensionContext) {
     const workspaceRoot = vscode.workspace.rootPath;
     const folderStructureProvider = createFolderStructureProvider(workspaceRoot);
     vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
+    watchRulesetsFile(context,
+        dependencyGraph, fileData, folders, allFiles, FileDetectionData, rulesetsData
 
+    );
     if (newFiles && Object.keys(newFiles).length > 0) {
         const fileSendPromises = Object.entries(newFiles).map(([filePath, content]) =>
             sendFileToServer(filePath, content, fileData)
@@ -98,10 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
         statusBarItem.show();
 
 
-        watchRulesetsFile(context,
-            dependencyGraph, fileData, folders, allFiles, FileDetectionData, rulesetsData
-    
-        )
+      
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData, context);
         // Show success message
         statusBarItem.text = "$(check) Analysis complete";
