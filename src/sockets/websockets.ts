@@ -118,7 +118,7 @@ function establishWebSocketConnection(codeSmell: string,
                                         }
                                     }
                                 }
-
+                                console.log(newTriggerData);
                                 FileDetectionData[file].user_triggered_detection.push(newTriggerData);
                             }
                             console.log("__________________FILE DETECTION DATA in trigger __________________");

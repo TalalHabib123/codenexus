@@ -208,7 +208,7 @@ export function showCodeSmellsInProblemsTab(
               diagnostics.push(
                 new vscode.Diagnostic(
                   range,
-                  conflict,
+                  "Global Variale Conflict:" + conflict,
                   vscode.DiagnosticSeverity.Warning
                 )
               )
