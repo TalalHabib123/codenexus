@@ -24,7 +24,6 @@ import { createFile, watchRulesetsFile } from './utils/workspace-update/rulesets
 import { Rules } from './types/rulesets';
 import { login } from './utils/ui/login';
 import { onRulesetChanged } from './utils/workspace-update/rulesets'; 
-
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
@@ -39,7 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
    
     createFile(context);
     login(context);
-
+    mainAuth(context);
 // console.log("__________________RULESETS DATA __________________");
 // console.log(rulesetsData);
 // console.log("_____________________________________________________");
@@ -186,7 +185,6 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(runAnalysis);
-    console.log("=====================================");
     console.log("Run Analysis");
     console.log(runAnalysis);
     const manualCodeProvider = new ManualCodeProvider(context,rulesetsData);

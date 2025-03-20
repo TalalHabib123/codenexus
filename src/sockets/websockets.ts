@@ -109,6 +109,7 @@ function establishWebSocketConnection(codeSmell: string,
                                     error: '',
                                 };
                                 if (!FileDetectionData[file].user_triggered_detection) {
+                                    console.log("FileDetectionData[file].user_triggered_detection is undefined, initializing it as an empty array.");
                                     FileDetectionData[file].user_triggered_detection = [];
                                 }
                                 else {
@@ -118,7 +119,8 @@ function establishWebSocketConnection(codeSmell: string,
                                         }
                                     }
                                 }
-
+                                console.log("FileDetectionData[file].user_triggered_detection is defined, pushing new data.");
+                                console.log(newTriggerData);
                                 FileDetectionData[file].user_triggered_detection.push(newTriggerData);
                             }
                             console.log("__________________FILE DETECTION DATA in trigger __________________");

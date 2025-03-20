@@ -3,6 +3,8 @@ import { FolderStructure } from "../../../types/folder";
 import { CodeResponse } from "../../../types/api";
 import { getFilePath_From, getFilePath_Import } from "./import_handler";
 import path from "path";
+import { dependencyGraphLog } from "../../api/log_api/dependency-graph";
+import * as vscode from 'vscode';
 
 function importEverything(importfilepath: string, fileData: { [key: string]: CodeResponse }, alias: string): UtilizedEntity[] {
     const utilizedentities: UtilizedEntity[] = [];
@@ -133,6 +135,7 @@ function buildDependencyGraph(
     workspaceFolders: string[]
 ): { [key: string]: Map<string, FileNode> } {
     const graph: { [key: string]: Map<string, FileNode> } = {};
+    console.log("Building dependency graph......")
 
     function separate_files(workspaceFolder: string, fileData: { [key: string]: CodeResponse }) {
         const files: { [key: string]: CodeResponse } = {};
@@ -339,6 +342,8 @@ function buildDependencyGraph(
         }
         graph[folder] = folderGraph;
     }
+    const root= vscode.workspace.workspaceFolders?.[0].uri.fsPath || "";
+    dependencyGraphLog(path.basename(root), graph);
     return graph;
 }
 

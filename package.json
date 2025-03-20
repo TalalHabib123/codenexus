@@ -11,11 +11,9 @@
     "Other"
   ],
   "activationEvents": [
-    "*",
-    "onCommand:extension.learnMore",
-    "onCommand:extension.refactorProblem",
-    "onCommand:codenexus.showAST",
-    "onStartupFinished"
+    "*"
+   
+
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -82,6 +80,18 @@
       {
         "command": "codenexus.showAST",
         "title": "Show Depdency Visualization"
+      },
+      {
+        "command": "codenexus.login",
+        "title": "CodeNexus: Login"
+      },
+      {
+        "command": "codenexus.logout",
+        "title": "CodeNexus: Logout"
+      },
+      {
+        "command": "codenexus.toggleLogin",
+        "title": "CodeNexus: Toggle Login"
       }
     ],
     "configuration": {
@@ -141,6 +151,8 @@
   "dependencies": {
     "axios": "^1.7.9",
     "codenexus": "file:",
+    "node-fetch": "^3.3.2",
+    "uuid": "^11.1.0",
     "ws": "^8.18.0"
   }
 }

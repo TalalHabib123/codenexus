@@ -25,6 +25,9 @@ export async function detectCodeSmells(dependencyGraph: { [key: string]: Map<str
     rulesetsData: Rules
 ) {
     console.log(rulesetsData);
+    // includeFiles=["*", "filenme.py", {path: , smells:}]
+    // includesmells=["dead code"]
+    
     try {
         
         const detect = [
