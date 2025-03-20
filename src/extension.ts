@@ -23,7 +23,7 @@ import { userTriggeredcodesmell } from './utils/ui/problemsTab';
 import { createFile, watchRulesetsFile } from './utils/workspace-update/rulesets';
 import { Rules } from './types/rulesets';
 import { login } from './utils/ui/login';
-import { onRulesetChanged } from './utils/workspace-update/rulesets'; 
+import { onRulesetChanged } from './utils/workspace-update/rulesets';
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
@@ -31,27 +31,27 @@ let folderStructureData: { [key: string]: FolderStructure } = {};
 let statusBarItem: vscode.StatusBarItem;
 let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
 let refactorData: { [key: string]: Array<RefactoringData> } = {};
-let rulesetsData: Rules = {detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: ["*"]};
+let rulesetsData: Rules = { detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: ["*"] };
 
 export async function activate(context: vscode.ExtensionContext) {
 
-   
+
     createFile(context);
     login(context);
-    mainAuth(context);
-// console.log("__________________RULESETS DATA __________________");
-// console.log(rulesetsData);
-// console.log("_____________________________________________________");
-    
+    // mainAuth(context);
+    // console.log("__________________RULESETS DATA __________________");
+    // console.log(rulesetsData);
+    // console.log("_____________________________________________________");
+
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     context.subscriptions.push(statusBarItem);
-   statusBarItem.text="CodeNexus intillaizing";
-   statusBarItem.show();
-   
-    
+    statusBarItem.text = "CodeNexus intillaizing";
+    statusBarItem.show();
+
+
     let dependencyGraph: { [key: string]: Map<string, FileNode> } = {};
 
     fileData = context.workspaceState.get<{ [key: string]: CodeResponse }>('fileData', {});
@@ -96,11 +96,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         statusBarItem.text = "$(sync~spin) Static Analysis in progress...";
         statusBarItem.show();
-    
-        
+
+
         watchRulesetsFile(context,
             dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData
-    
+
         );
         await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData);
         // Show success message
@@ -187,15 +187,15 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(runAnalysis);
     console.log("Run Analysis");
     console.log(runAnalysis);
-    const manualCodeProvider = new ManualCodeProvider(context,rulesetsData);
+    const manualCodeProvider = new ManualCodeProvider(context, rulesetsData);
     vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
     setupRulesetsFileWatcher(context, manualCodeProvider, dependencyGraph, folders, newFiles);
 
-context.subscriptions.push(
-    onRulesetChanged(updatedRulesets => {
-        manualCodeProvider.updateItems(updatedRulesets);
-    })
-);
+    context.subscriptions.push(
+        onRulesetChanged(updatedRulesets => {
+            manualCodeProvider.updateItems(updatedRulesets);
+        })
+    );
     context.subscriptions.push(
         vscode.commands.registerCommand('manualCodeView.toggleTick', (item: ManualCodeItem) => {
             manualCodeProvider.toggleCodeSmell(item);
@@ -233,10 +233,10 @@ context.subscriptions.push(
 
                     RefreshDetection(context, folders, allFiles);
                     removeDiagnostic(filePath, diagnostic);
-                   
+
                     context.workspaceState.update('FileDetectionData', FileDetectionData);
                     context.workspaceState.update('refactorData', refactorData);
-                    
+
                 } else {
                     vscode.window.showErrorMessage("Failed to get refactored code.");
                     statusBarItem.text = "$(sync~spin) Refactoring Failed!";
@@ -333,29 +333,29 @@ class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
             return undefined; // No relevant diagnostics found
         }
 
-                // Map filtered diagnostics to specific code actions
+        // Map filtered diagnostics to specific code actions
         return matchingDiagnostics.map((diagnostic) => {
-            
-        
+
+
             // Create a descriptive title for the Code Action using template literals
             const actionTitle = `Fix "${diagnostic.message}" using codeNexus`;
-        
+
             // Initialize the Code Action with the dynamic title
             const action = new vscode.CodeAction(actionTitle, vscode.CodeActionKind.QuickFix);
-        
+
             // Assign the command to be execruted when the Code Action is selected
             action.command = {
                 command: "extension.refactorProblem",
                 title: "Fix this using codeNexus", // This title won't appear in the Quick Fix menu
                 arguments: [diagnostic], // Pass the specific diagnostic to the command
             };
-        
+
             // Associate the diagnostic with this Code Action
             action.diagnostics = [diagnostic];
-        
+
             // Optionally mark this as the preferred fix (if applicable)
             action.isPreferred = true;
-        
+
             return action;
         });
     }
@@ -377,28 +377,44 @@ export function triggerCodeSmellDetection(
     context: vscode.ExtensionContext
 ): void {
 
-    establishWebSocketConnection(codeSmell, ws, fileData, FileDetectionData, 'detection', codeSmell, diagnosticCollection, context);
-   
+    establishWebSocketConnection(
+        codeSmell, 
+        ws, 
+        fileData, 
+        FileDetectionData, 
+        folderStructureData, 
+        rulesetsData,
+        'detection', codeSmell, diagnosticCollection, context);
+
 }
 
 
 export function triggerRefactoring(
-    codeSmell: string, 
+    codeSmell: string,
     file: string,
     additionalData: any = null,
     context: vscode.ExtensionContext
 ): void {
-    establishWebSocketConnection(codeSmell, ws, fileData, FileDetectionData, 'refactoring', codeSmell, diagnosticCollection, context, file, additionalData);
+    establishWebSocketConnection(
+        codeSmell, 
+        ws, 
+        fileData, 
+        FileDetectionData, 
+        folderStructureData, 
+        rulesetsData,
+        'refactoring', codeSmell, diagnosticCollection, context, file, additionalData,
+        refactorData    
+    );
 }
 
 
 
-function setupRulesetsFileWatcher(context: vscode.ExtensionContext, manualCodeProvider: ManualCodeProvider, 
-                                dependencyGraph: { [key: string]: Map<string, FileNode> }, folders: string[], newFiles: { [key: string]: string }) {
+function setupRulesetsFileWatcher(context: vscode.ExtensionContext, manualCodeProvider: ManualCodeProvider,
+    dependencyGraph: { [key: string]: Map<string, FileNode> }, folders: string[], newFiles: { [key: string]: string }) {
     const rulesetsFileWatcher = vscode.workspace.createFileSystemWatcher('**/codenexus-rulesets.json');
     rulesetsFileWatcher.onDidChange(uri => {
         fs.readFile(uri.fsPath, 'utf8', async (err, data) => {
-            if (err) {return;};
+            if (err) { return; };
             try {
                 const updatedRulesets: Rules = JSON.parse(data);
                 rulesetsData = updatedRulesets;
@@ -411,7 +427,7 @@ function setupRulesetsFileWatcher(context: vscode.ExtensionContext, manualCodePr
     });
     rulesetsFileWatcher.onDidCreate(uri => {
         fs.readFile(uri.fsPath, 'utf8', async (err, data) => {
-            if (err) {return;}
+            if (err) { return; }
             try {
                 const updatedRulesets: Rules = JSON.parse(data);
                 rulesetsData = updatedRulesets;
