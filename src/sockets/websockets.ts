@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { CodeResponse, DetectionResponse, UserTriggeredDetectionResponse, UserTriggeredDetection } from '../types/api';
 import { taskDataGenerator as detectionTaskDataGenerator } from './detections/generate_task_data';
 import { detectionHelper } from './detections/detection_helper';
@@ -8,7 +9,10 @@ import { codeMapper } from './refactorings/code_mapper';
 import { taskDataGenerator as refactoringDataGenerator } from './refactorings/generate_task_data';
 import { showCodeSmellsInProblemsTab } from '../utils/ui/problemsTab';
 import { userTriggeredcodesmell } from '../utils/ui/problemsTab';
+import { detectionLog } from '../utils/api/log_api/detection_logs';
+import { refactorLogs } from '../utils/api/log_api/refactor_logs';
 let statusBarItem: vscode.StatusBarItem;
+
 
 export function activate(context: vscode.ExtensionContext) {
     // Create status bar if it doesn't exist
@@ -83,6 +87,7 @@ function establishWebSocketConnection(codeSmell: string,
             try {
                 const status = getStatusBar();
                 const message: UserTriggeredDetectionResponse = JSON.parse(data);
+                const detectionData: { [key: string]: DetectionResponse } = {};
                 //console.log('Received message:', message);
                 if (message.task_status === 'started') {
                     status.text = "$(sync~spin) Analysis in progress...";
@@ -111,6 +116,7 @@ function establishWebSocketConnection(codeSmell: string,
                                 if (!FileDetectionData[file].user_triggered_detection) {
                                     console.log("FileDetectionData[file].user_triggered_detection is undefined, initializing it as an empty array.");
                                     FileDetectionData[file].user_triggered_detection = [];
+                                    
                                 }
                                 else {
                                     for (let i = 0; i < FileDetectionData[file].user_triggered_detection.length; i++) {
@@ -121,10 +127,23 @@ function establishWebSocketConnection(codeSmell: string,
                                 }
                                 console.log(newTriggerData);
                                 FileDetectionData[file].user_triggered_detection.push(newTriggerData);
+
+                                // logs for manual detection
+                                const workspace = vscode.workspace.workspaceFolders;
+                                if (workspace === undefined) {
+                                    throw new Error('No workspace folders found');
+                                }
+                                if(!detectionData[file].user_triggered_detection){
+                                    detectionData[file].user_triggered_detection = [];
+                                }
+                                detectionData[file].user_triggered_detection.push(newTriggerData);
+                                detectionLog(detectionData, path.basename(workspace[0].uri.fsPath), codeSmell, 'manual');
                             }
                             console.log("__________________FILE DETECTION DATA in trigger __________________");
                             console.log(FileDetectionData);
                             console.log("_____________________________________________________");
+                           
+                        
                             // showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
                             userTriggeredcodesmell(codeSmell, FileDetectionData, diagnosticCollection);
                             vscode.window.showInformationMessage(`Problems updated for: ${taskJob}`);

@@ -10,6 +10,13 @@ export const rulesetChangedEvent = new vscode.EventEmitter<Rules>();
 export const onRulesetChanged = rulesetChangedEvent.event;
 
 export function createFile(context: vscode.ExtensionContext) {
+    // Get workspace storage key
+    const getWorkspaceKey = () => {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) return null;
+        return `rulesetInitialized-${workspaceFolders[0].uri.fsPath}`;
+    };
+
     let disposable = vscode.commands.registerCommand('extension.generateJson', async () => {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
@@ -19,9 +26,22 @@ export function createFile(context: vscode.ExtensionContext) {
 
         const rootPath = workspaceFolders[0].uri.fsPath;
         const jsonFilePath = path.join(rootPath, 'codenexus-rulesets.json');
+        const workspaceKey = getWorkspaceKey();
 
+        // Check if the ruleset file already exists
         if (fs.existsSync(jsonFilePath)) {
+            // If the file exists, mark this workspace as initialized
+            if (workspaceKey) {
+                context.workspaceState.update(workspaceKey, true);
+            }
             vscode.window.showInformationMessage('JSON file already exists. No action taken.');
+            return;
+        }
+
+        // Check if this is the first time opening the project
+        if (workspaceKey && context.workspaceState.get(workspaceKey, false)) {
+            // This project has been opened before and the file was likely deleted by the user
+            console.log('Ruleset file was previously created but is now missing. User likely deleted it.');
             return;
         }
 
@@ -36,37 +56,45 @@ export function createFile(context: vscode.ExtensionContext) {
             if (err) {
                 vscode.window.showErrorMessage(`Failed to create JSON file: ${err.message}`);
             } else {
+                // Mark this workspace as initialized
+                if (workspaceKey) {
+                    context.workspaceState.update(workspaceKey, true);
+                }
                 createProject({ title: path.basename(rootPath), description: 'New project created' });
                 vscode.window.showInformationMessage(`JSON file created at ${jsonFilePath}`);
                 // Emit the ruleset changed event
+                context.workspaceState.update('rulesetsData', jsonContent);
                 rulesetChangedEvent.fire(jsonContent);
-                
             }
         });
     });
 
     context.subscriptions.push(disposable);
-    vscode.commands.executeCommand('extension.generateJson');
+    
+    // Only call the command if this is potentially a first-time open
+    const workspaceKey = getWorkspaceKey();
+    if (workspaceKey && !context.workspaceState.get(workspaceKey, false)) {
+        vscode.commands.executeCommand('extension.generateJson');
+    }
 }
-
 export function watchRulesetsFile(context: vscode.ExtensionContext,
     dependencyGraph: { [key: string]: Map<string, FileNode> }, 
     fileData: { [key: string]: CodeResponse },
     workspaceFolders: string[],
     newFiles: { [key: string]: string },
     FileDetectionData: { [key: string]: DetectionResponse },
-    rulesetsData: Rules
+    rulesetsData: Rules,
 ) {
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('rulesetsDiagnostics');
     context.subscriptions.push(diagnosticCollection);
     
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/codenexus-rulesets.json');
     console.log('Watching for changes to codenexus-rulesets.json...');
-    fileWatcher.onDidChange(uri => updateRulesetsData(uri, diagnosticCollection, dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData));
-    fileWatcher.onDidCreate(uri => updateRulesetsData(uri, diagnosticCollection, dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData));
+    fileWatcher.onDidChange(uri => updateRulesetsData(uri, diagnosticCollection, dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData, context));
+    fileWatcher.onDidCreate(uri => updateRulesetsData(uri, diagnosticCollection, dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData, context));
     fileWatcher.onDidDelete(() => {
         diagnosticCollection.clear();
-        resetRulesetsData(rulesetsData);
+        resetRulesetsData(rulesetsData, context);
         // Emit the ruleset changed event with reset data
         rulesetChangedEvent.fire(rulesetsData);
     });
@@ -74,13 +102,15 @@ export function watchRulesetsFile(context: vscode.ExtensionContext,
     context.subscriptions.push(fileWatcher);
 }
 
-function updateRulesetsData(uri: vscode.Uri,  diagnosticCollection: vscode.DiagnosticCollection,
+function updateRulesetsData(uri: vscode.Uri,  
+    diagnosticCollection: vscode.DiagnosticCollection,
     dependencyGraph: { [key: string]: Map<string, FileNode> }, 
     fileData: { [key: string]: CodeResponse },
     workspaceFolders: string[],
     newFiles: { [key: string]: string },
     FileDetectionData: { [key: string]: DetectionResponse },
-    rulesetsData: Rules
+    rulesetsData: Rules,
+    context: vscode.ExtensionContext
 ) {
     console.log('Updating RulesetsData and validating codenexus-rulesets.json...');
     const diagnostics: vscode.Diagnostic[] = [];
@@ -97,8 +127,9 @@ function updateRulesetsData(uri: vscode.Uri,  diagnosticCollection: vscode.Diagn
             validateFileConfigs(jsonContent, diagnostics, data);
             
             Object.assign(rulesetsData, jsonContent);
+            context.workspaceState.update('rulesetsData', rulesetsData);
             console.log('Updated RulesetsData:', rulesetsData);
-            detectCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData);
+            detectCodeSmells(dependencyGraph, fileData, workspaceFolders, newFiles, FileDetectionData, rulesetsData, context);
             
             // Emit the ruleset changed event
             rulesetChangedEvent.fire(rulesetsData);
@@ -222,12 +253,13 @@ function findValuePosition(data: string, value: string): { line: number, col: nu
     return { line: 0, col: 0 };
 }
 
-function resetRulesetsData(RulesetsData: Rules) {
+function resetRulesetsData(RulesetsData: Rules, context: vscode.ExtensionContext) {
     Object.assign(RulesetsData, {
         refactorSmells: ["*"],
         detectSmells: ["*"],
         includeFiles: ["*"],
         excludeFiles: []
     });
+    context.workspaceState.update('rulesetsData', RulesetsData);
     console.log("RulesetsData reset due to file deletion.");
 }

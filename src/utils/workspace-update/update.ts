@@ -22,7 +22,7 @@ export const fileWatcherEventHandler = (
 
   fileWatcher.onDidCreate(uri => {
     // Add the file to the dependency graph and check its compilability
-    checkCompilable(uri.fsPath, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection, rulesetsData);
+    checkCompilable(uri.fsPath, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection, rulesetsData, context);
   });
 
   fileWatcher.onDidDelete(uri => {
@@ -56,7 +56,7 @@ export const fileWatcherEventHandler = (
 
     debounceTimers[filePath] = setTimeout(() => {
       if (filePath.endsWith('.py')) {
-        checkCompilable(filePath, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection, rulesetsData);
+        checkCompilable(filePath, fileData, FileDetectionData, dependencyGraph, folders, diagnosticCollection, rulesetsData, context);
       }
     }, 1000); 
   });
@@ -72,7 +72,8 @@ async function checkCompilable(
   dependencyGraph: { [key: string]: Map<string, FileNode> },
   folders: string[],
   diagnosticCollection: vscode.DiagnosticCollection,
-  rulesetsData: Rules
+  rulesetsData: Rules,
+  context: vscode.ExtensionContext
 ) {
   if (filePath.endsWith('.pyc') || filePath.includes('__pycache__')) {
     console.log(`Skipping non-source file: ${filePath}`);
@@ -103,7 +104,7 @@ async function checkCompilable(
       diagnosticCollection.delete(uri);
 
       // Perform static analysis
-      await detectCodeSmells(dependencyGraph, fileData, folders, { [filePath]: fs.readFileSync(filePath, 'utf-8') }, FileDetectionData, rulesetsData);
+      await detectCodeSmells(dependencyGraph, fileData, folders, { [filePath]: fs.readFileSync(filePath, 'utf-8') }, FileDetectionData, rulesetsData, context);
       showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
     }
   });

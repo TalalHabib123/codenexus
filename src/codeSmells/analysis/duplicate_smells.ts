@@ -9,6 +9,7 @@ export const getDuplicateCodeSmells = async (
     FileDetectionData: { [key: string]: DetectionResponse },
     rulesetsData: Rules
 ) => {
+    console.log("Running duplicate code detection with ruleset configuration:", rulesetsData);
     const DetectionData: { [key: string]: any } = {};
     const analysisPromises = [];
     for (const [filePath, data] of Object.entries(newFiles)) {
