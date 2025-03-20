@@ -208,7 +208,7 @@ export function showCodeSmellsInProblemsTab(
               diagnostics.push(
                 new vscode.Diagnostic(
                   range,
-                  conflict,
+                  "Global Variale Conflict:" + conflict,
                   vscode.DiagnosticSeverity.Warning
                 )
               )
@@ -271,25 +271,25 @@ export function showCodeSmellsInProblemsTab(
 
       if (Array.isArray(unreachable)) {
         unreachable.forEach((unreachableCode, index) => {
-        
+
           const message = `${unreachableCode}`;
-       
+
 
           // Regular expression to match "line" followed by a number
           const regex = /line\s+(\d+)/i;
           const match = message.match(regex);
           let lineNumber = 0; // Initialize lineNumber
-          
+
           if (match && match[1]) {
-              lineNumber = parseInt(match[1], 10); // Corrected assignment without type annotation
+            lineNumber = parseInt(match[1], 10); // Corrected assignment without type annotation
           } else {
-              console.log("No line number found in the message.");
+            console.log("No line number found in the message.");
           }
-          
+
           // Ensure consistent casing: use 'lineNumber' instead of 'linenumber'
           const range = new vscode.Range(
-              new vscode.Position(lineNumber - 1, 0),
-              new vscode.Position(lineNumber - 1, 100)
+            new vscode.Position(lineNumber - 1, 0),
+            new vscode.Position(lineNumber - 1, 100)
           );
 
           const newDiagnostic = new vscode.Diagnostic(
@@ -297,8 +297,8 @@ export function showCodeSmellsInProblemsTab(
             message,
             vscode.DiagnosticSeverity.Warning
           );
-          detectedCodeSmells.add({ type: "Unreachable Code", filePath, startlineNumber:lineNumber, endlineNumber: lineNumber });
-         
+          detectedCodeSmells.add({ type: "Unreachable Code", filePath, startlineNumber: lineNumber, endlineNumber: lineNumber });
+
           detectedCodeSmells.add({
             type: "Unreachable Code",
             filePath,
@@ -353,11 +353,11 @@ export function showCodeSmellsInProblemsTab(
             diagnostics.push(newDiagnostic);
           }
         });
-      
+
       }
       if (Array.isArray(funcNames) && funcNames.length > 0) {
         funcNames.forEach((funcName, index) => {
-          
+
           const range = new vscode.Range(
             new vscode.Position(0, 0),
             new vscode.Position(0, 0)
@@ -418,11 +418,11 @@ export function showCodeSmellsInProblemsTab(
         tempField.forEach((tempFieldobj) => {
           let m;
 
-          if (extractUsedAtLines(tempFieldobj) != null) {
+          if (extractUsedAtLines(tempFieldobj) !== null) {
             m = extractUsedAtLines(tempFieldobj);
           } else {
           }
-          if (m != null) {
+          if (m !== null && m !== undefined) {
             let range = new vscode.Range(
               new vscode.Position(m[0] - 1, 0),
               new vscode.Position(m[0] - 1, 100)
@@ -464,38 +464,38 @@ export function showCodeSmellsInProblemsTab(
       const complexField = detectionData.overly_complex_condition.conditionals;
 
       if (Array.isArray(complexField) && complexField.length > 0) {
-          complexField.forEach((condition, index) => {
-              const range = new vscode.Range(
-                  new vscode.Position(condition.line_number - 1, 0),
-                  new vscode.Position(condition.line_number - 1, 100)
-              );
-      
-              const message = `Overly complex condition detected.`;
-              const newDiagnostic = new vscode.Diagnostic(
-                  range,
-                  message,
-                  vscode.DiagnosticSeverity.Warning
-              );
-      
-              newDiagnostic.code = `Complex Conditional-${index}`;
-              detectedCodeSmells.add({ 
-                  type: "Overly Complex Conditional", 
-                  filePath, 
-                  startlineNumber: condition.line_number,
-                  endlineNumber: condition.line_number 
-              });
-      
-              // Check for duplicate diagnostics
-              const existingDiagnostic = diagnostics.find(
-                  (diag) =>
-                      diag.range.isEqual(newDiagnostic.range) &&
-                      diag.message === newDiagnostic.message
-              );
-      
-              if (!existingDiagnostic) {
-                  diagnostics.push(newDiagnostic);
-              }
+        complexField.forEach((condition, index) => {
+          const range = new vscode.Range(
+            new vscode.Position(condition.line_number - 1, 0),
+            new vscode.Position(condition.line_number - 1, 100)
+          );
+
+          const message = `Overly complex condition detected.`;
+          const newDiagnostic = new vscode.Diagnostic(
+            range,
+            message,
+            vscode.DiagnosticSeverity.Warning
+          );
+
+          newDiagnostic.code = `Complex Conditional-${index}`;
+          detectedCodeSmells.add({
+            type: "Overly Complex Conditional",
+            filePath,
+            startlineNumber: condition.line_number,
+            endlineNumber: condition.line_number
           });
+
+          // Check for duplicate diagnostics
+          const existingDiagnostic = diagnostics.find(
+            (diag) =>
+              diag.range.isEqual(newDiagnostic.range) &&
+              diag.message === newDiagnostic.message
+          );
+
+          if (!existingDiagnostic) {
+            diagnostics.push(newDiagnostic);
+          }
+        });
       }
     }
 
@@ -599,7 +599,7 @@ export class CodeSmellsProvider implements vscode.TreeDataProvider<TreeItem> {
   }
 }
 
-abstract class TreeItem extends vscode.TreeItem {}
+abstract class TreeItem extends vscode.TreeItem { }
 
 class CodeSmellItem extends TreeItem {
   constructor(
@@ -624,7 +624,7 @@ class FileItem extends TreeItem {
 }
 
 export function userTriggeredcodesmell(
-  codeSmell : string,
+  codeSmell: string,
   FileDetectionData: { [key: string]: DetectionResponse },
   diagnosticCollection: vscode.DiagnosticCollection
 ) {
@@ -636,9 +636,11 @@ export function userTriggeredcodesmell(
         if (detection?.success && detection.data && !detection.outdated) {
           const detectedJobType = detection.job_id;
           let message = "";
-          if (detection.job_id === "long_function"  && detection.job_id === codeSmell) {
+          let issueMessage = "";
+          if (detection.job_id === "long_function" && detection.job_id === codeSmell) {
             detection.data.forEach((data) => {
               message = ` Long function detected ${data.Detected} `;
+              issueMessage = `Long Function Issue: ${data.Issue}`;
               detectedCodeSmells.add({
                 type: "Long Function",
                 filePath,
@@ -651,6 +653,7 @@ export function userTriggeredcodesmell(
           } else if (detection.job_id === "god_object" && detection.job_id === codeSmell) {
             detection.data.forEach((data) => {
               message = ` God object detected ${data.Detected} `;
+              issueMessage = `God Object Issue: ${data.Issue}`;
               detectedCodeSmells.add({
                 type: "God object",
                 filePath,
@@ -660,9 +663,10 @@ export function userTriggeredcodesmell(
             });
             //  message = ` God object detected ${detection.data[0].Detection} `;
             //  detectedCodeSmells.add({ type: "God object", filePath, startlineNumber: detection.data[0].line_number , endlineNumber: detection.data[0].line_number });
-          } else if (detection.job_id === "feature_envy"  && detection.job_id === codeSmell) {
+          } else if (detection.job_id === "feature_envy" && detection.job_id === codeSmell) {
             detection.data.forEach((data) => {
               message = ` Feature envy detected ${data.Detected} `;
+              issueMessage = `Feature Envy Issue: ${data.Issue}`;
               detectedCodeSmells.add({
                 type: "Feature Envy",
                 filePath,
@@ -675,6 +679,7 @@ export function userTriggeredcodesmell(
           } else if (detection.job_id === "inappropriate_intimacy" && detection.job_id === codeSmell) {
             detection.data.forEach((data) => {
               message = ` Inappropriate intimacy detected ${data.Detected} `;
+              issueMessage = `Inappropriate Intimacy Issue: ${data.Issue}`;
               detectedCodeSmells.add({
                 type: "Inappropriate Intimacy",
                 filePath,
@@ -687,6 +692,7 @@ export function userTriggeredcodesmell(
           } else if (detection.job_id === "middle_man" && detection.job_id === codeSmell) {
             detection.data.forEach((data) => {
               message = ` Middle Man detected ${data.Detected} `;
+              issueMessage = `Middle Man Issue: ${data.Issue}`;
               detectedCodeSmells.add({
                 type: "Middle Man",
                 filePath,
@@ -697,6 +703,7 @@ export function userTriggeredcodesmell(
           } else if (detection.job_id === "switch_statement_abuser" && detection.job_id === codeSmell) {
             detection.data.forEach((data) => {
               message = ` Switch statement abuser detected ${data.Detected} `;
+              issueMessage = `Switch Statement Abuser Issue: ${data.Issue}`;
               detectedCodeSmells.add({
                 type: "Switch Statement Abuser",
                 filePath,
@@ -707,6 +714,7 @@ export function userTriggeredcodesmell(
           } else if (detection.job_id === "excessive_flags" && detection.job_id === codeSmell) {
             detection.data.forEach((data) => {
               message = ` Excessive flags detected ${data.Detected} `;
+              issueMessage = `Excessive Flags Issue: ${data.Issue}`;
               detectedCodeSmells.add({
                 type: "Excessive Flags",
                 filePath,
@@ -715,34 +723,55 @@ export function userTriggeredcodesmell(
               });
             });
           }
-        if (message !== ""){
-          const range = new vscode.Range(
-            new vscode.Position(detection.data[0].line_number - 1, 0),
-            new vscode.Position(detection.data[0].line_number - 1, 100)
-          );
-          const newDiagnostic = new vscode.Diagnostic(
-            range,
-            message,
-            vscode.DiagnosticSeverity.Warning
-          );
-          const existingDiagnostic = diagnostics.find(
-            (diag) =>
-              diag.range.isEqual(newDiagnostic.range) &&
-              diag.message === newDiagnostic.message
-          );
+          if (message !== "") {
+            const range = new vscode.Range(
+              new vscode.Position(detection.data[0].line_number - 1, 0),
+              new vscode.Position(detection.data[0].line_number - 1, 100)
+            );
+            const newDiagnostic = new vscode.Diagnostic(
+              range,
+              message,
+              vscode.DiagnosticSeverity.Warning
+            );
+            const existingDiagnostic = diagnostics.find(
+              (diag) =>
+                diag.range.isEqual(newDiagnostic.range) &&
+                diag.message === newDiagnostic.message
+            );
 
-          if (!existingDiagnostic) {
-            diagnostics.push(newDiagnostic);
+            if (!existingDiagnostic) {
+              diagnostics.push(newDiagnostic);
+            }
           }
-        }
+
+          if (issueMessage !== "") {
+            const range = new vscode.Range(
+              new vscode.Position(detection.data[0].line_number - 1, 0),
+              new vscode.Position(detection.data[0].line_number - 1, 100)
+            );
+            const newDiagnostic = new vscode.Diagnostic(
+              range,
+              issueMessage,
+              vscode.DiagnosticSeverity.Warning
+            );
+            const existingDiagnostic = diagnostics.find(
+              (diag) =>
+                diag.range.isEqual(newDiagnostic.range) &&
+                diag.message === newDiagnostic.message
+            );
+
+            if (!existingDiagnostic) {
+              diagnostics.push(newDiagnostic);
+            }
+          }
         }
       });
     }
     console.log(diagnostics, diagnostics.length);
-    if (diagnostics.length > 0){
-    const uri = vscode.Uri.file(filePath);
-    diagnosticCollection.set(uri, diagnostics);
-    } 
+    if (diagnostics.length > 0) {
+      const uri = vscode.Uri.file(filePath);
+      diagnosticCollection.set(uri, diagnostics);
+    }
   }
   vscode.commands.executeCommand("package-explorer.refreshCodeSmells");
 }

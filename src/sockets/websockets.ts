@@ -119,7 +119,6 @@ function establishWebSocketConnection(codeSmell: string,
                                         }
                                     }
                                 }
-                                console.log("FileDetectionData[file].user_triggered_detection is defined, pushing new data.");
                                 console.log(newTriggerData);
                                 FileDetectionData[file].user_triggered_detection.push(newTriggerData);
                             }
