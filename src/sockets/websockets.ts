@@ -4,11 +4,17 @@ import * as path from 'path';
 import { CodeResponse, DetectionResponse, UserTriggeredDetectionResponse, UserTriggeredDetection } from '../types/api';
 import { taskDataGenerator as detectionTaskDataGenerator } from './detections/generate_task_data';
 import { detectionHelper } from './detections/detection_helper';
-import { refactoringHelper } from './refactorings/refactoring_helper';
+import { refactoringHelper, refactoringMappingHelper } from './refactorings/refactoring_helper';
 import { codeMapper } from './refactorings/code_mapper';
 import { taskDataGenerator as refactoringDataGenerator } from './refactorings/generate_task_data';
 import { showCodeSmellsInProblemsTab } from '../utils/ui/problemsTab';
 import { userTriggeredcodesmell } from '../utils/ui/problemsTab';
+import { sendFileToServer } from '../utils/api/ast_server';
+import { buildDependencyGraph } from '../utils/codebase_analysis/graph/dependency';
+import { detectCodeSmells } from '../codeSmells/detection';
+import { FolderStructure } from '../types/folder';
+import { Rules } from '../types/rulesets';
+import { RefactoringData } from '../types/refactor_models';
 import { detectionLog } from '../utils/api/log_api/detection_logs';
 import { refactorLogs } from '../utils/api/log_api/refactor_logs';
 let statusBarItem: vscode.StatusBarItem;
@@ -56,12 +62,15 @@ function establishWebSocketConnection(codeSmell: string,
     ws: WebSocket | null = null,
     fileData: { [key: string]: CodeResponse },
     FileDetectionData: { [key: string]: DetectionResponse },
+    folderStructureData: { [key: string]: FolderStructure },
+    rulesetsData: Rules,
     taskType: string,
     taskJob: string,
     diagnosticCollection: vscode.DiagnosticCollection,
     context: vscode.ExtensionContext,
     file: string = '',
     additonalData: any = null,
+    refactorData: { [key: string]: Array<RefactoringData> } = {},
 ) {
 
     let taskData;
@@ -83,7 +92,7 @@ function establishWebSocketConnection(codeSmell: string,
             sendMessage(ws, taskData, taskType, taskJob);
         });
 
-        ws.on('message', (data: string) => {
+        ws.on('message', async (data: string) => {
             try {
                 const status = getStatusBar();
                 const message: UserTriggeredDetectionResponse = JSON.parse(data);
@@ -153,9 +162,51 @@ function establishWebSocketConnection(codeSmell: string,
                         else if (message.task_type === 'refactoring') {
                             vscode.window.showInformationMessage(`Refactoring completed for: ${taskJob}`);
                             const refactoredData = message.processed_data.code_snippet;
+                            const workspaceFolders = vscode.workspace.workspaceFolders;
+                            const folders = workspaceFolders?.map(folder => folder.uri.fsPath) || [];
+                            let files: { [key: string]: string; } = {};
                             if (refactoredData && typeof refactoredData === 'string') {
-                                codeMapper(refactoredData, file);
+                                if (codeMapper(refactoredData, file)) {
+                                    if (!refactorData[file]) {
+                                        refactorData[file] = [];
+                                    }
+                                    if (refactorData[file].length > 0) {
+                                        for (let i = 0; i < refactorData[file].length; i++) {
+                                            if (refactorData[file][i].refactoring_type === taskJob) {
+                                                refactorData[file][i].outdated = true;
+                                            }
+                                        }
+                                    }   
+                                    refactorData[file].push({
+                                        orginal_code: fileData[file].code,
+                                        refactored_code: refactoredData,
+                                        refactoring_type: taskJob,  
+                                        time: new Date(),
+                                        job_id: message.correlation_id,
+                                        success: true,
+                                        outdated: false,
+                                    });
+                                    if (refactoringMappingHelper[taskJob] === "default") {
+                                        files[file] = refactoredData;
+                                        const fileSendPromises = Object.entries(files).map(([filePath, content]) =>
+                                            sendFileToServer(filePath, content, fileData)
+                                        );
+                                        await Promise.all(fileSendPromises);
+                                        let dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
+                                        await detectCodeSmells(dependencyGraph, fileData, folders, files, FileDetectionData, rulesetsData, context);
+
+                                        const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
+                                        processedFiles[file] = refactoredData;
+                                        context.workspaceState.update('processedFiles', processedFiles);
+                                        context.workspaceState.update('fileData', fileData);
+                                        context.workspaceState.update('FileDetectionData', FileDetectionData);
+                                        context.workspaceState.update('dependencyGraph', dependencyGraph);
+                                        context.workspaceState.update('refactorData', refactorData);
+                                    }
+                                }
                             }
+
+
                         }
                     }
 

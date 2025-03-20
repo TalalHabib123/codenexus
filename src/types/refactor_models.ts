@@ -64,7 +64,7 @@ interface RefactorResponse {
 
 
 interface RefactoringData {
-    orginal_code: string;
+    orginal_code: string |undefined;
     refactored_code?: string;
     refactoring_type?: string;
     refactored_dependencies?: Dependency[];
