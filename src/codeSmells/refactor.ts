@@ -18,6 +18,8 @@ import { randomUUID } from 'crypto';
 import { triggerRefactoring } from '../extension';
 import { refactorLogs } from '../utils/api/log_api/refactor_logs';
 import path from 'path';
+import { DiagnosticRefactorProvider } from '../utils/diagnosisRefactor';
+
 
 
 
@@ -488,7 +490,7 @@ export const refactor = async (
             triggerRefactoring("global_conflict", filePath, null, context);
         }
 
-        else if (diagnostic.message.includes("Duplicate code")) {
+        else if (diagnostic.message.includes("Duplicated code")) {
             const uri = vscode.Uri.file(filePath);
             console.log(FileDetectionData[filePath]);
             console.log(FileDetectionData[filePath]?.user_triggered_detection);
@@ -511,7 +513,7 @@ export const refactor = async (
             triggerRefactoring("long_parameter_list", filePath, refactorName, context);
         }
 
-
+        return undefined;
 
     } catch (e) {
         console.error("Error in refactoring:", e);

@@ -3,6 +3,7 @@ import * as path from "path";
 import { CodeResponse, DetectionResponse } from "../../types/api";
 import { VariableConflictAnalysis } from "../../types/api";
 import { extractUsedAtLines } from "../line_getters";
+import { DiagnosticRefactorProvider } from "../diagnosisRefactor";
 
 export function showProblemsTab() {
   vscode.commands.executeCommand("workbench.action.problems.focus");
@@ -626,7 +627,8 @@ class FileItem extends TreeItem {
 export function userTriggeredcodesmell(
   codeSmell: string,
   FileDetectionData: { [key: string]: DetectionResponse },
-  diagnosticCollection: vscode.DiagnosticCollection
+  diagnosticCollection: vscode.DiagnosticCollection,
+  context: vscode.ExtensionContext
 ) {
   diagnosticCollection.clear();
   for (const [filePath, detectionData] of Object.entries(FileDetectionData)) {
@@ -768,10 +770,17 @@ export function userTriggeredcodesmell(
       });
     }
     console.log(diagnostics, diagnostics.length);
-    if (diagnostics.length > 0) {
       const uri = vscode.Uri.file(filePath);
       diagnosticCollection.set(uri, diagnostics);
-    }
+
   }
   vscode.commands.executeCommand("package-explorer.refreshCodeSmells");
+
+  context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider(
+      { scheme: "file", language: "python" },
+      new DiagnosticRefactorProvider(),
+      { providedCodeActionKinds: DiagnosticRefactorProvider.providedCodeActionKinds }
+    )
+  );
 }

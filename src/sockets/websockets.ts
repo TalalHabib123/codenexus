@@ -135,13 +135,20 @@ function establishWebSocketConnection(codeSmell: string,
                                     }
                                 }
                                 console.log(newTriggerData);
+                                console.log("__________________FILE DETECTION DATA in trigger __________________");
                                 FileDetectionData[file].user_triggered_detection.push(newTriggerData);
-
+                                console.log(FileDetectionData);
+                                console.log("_____________________________________________________");
+                                console.log("__________________FILE DETECTION DATA in trigger __________________");
                                 // logs for manual detection
                                 const workspace = vscode.workspace.workspaceFolders;
                                 if (workspace === undefined) {
                                     throw new Error('No workspace folders found');
                                 }
+                                if (!detectionData[file]){
+                                    detectionData[file] = { success: false };
+                                }
+                                    
                                 if(!detectionData[file].user_triggered_detection){
                                     detectionData[file].user_triggered_detection = [];
                                 }
@@ -152,9 +159,8 @@ function establishWebSocketConnection(codeSmell: string,
                             console.log(FileDetectionData);
                             console.log("_____________________________________________________");
                            
-                        
                             // showCodeSmellsInProblemsTab(FileDetectionData, diagnosticCollection);
-                            userTriggeredcodesmell(codeSmell, FileDetectionData, diagnosticCollection);
+                            userTriggeredcodesmell(codeSmell, FileDetectionData, diagnosticCollection, context);
                             vscode.window.showInformationMessage(`Problems updated for: ${taskJob}`);
                             context.workspaceState.update('FileDetectionData', FileDetectionData);
                         }

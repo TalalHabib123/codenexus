@@ -25,6 +25,7 @@ import { Rules } from './types/rulesets';
 import { login } from './utils/ui/login';
 import { onRulesetChanged } from './utils/workspace-update/rulesets';
 import { auth } from './auth/auth';
+import { DiagnosticRefactorProvider } from './utils/diagnosisRefactor';
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
@@ -86,8 +87,9 @@ export async function activate(context: vscode.ExtensionContext) {
         dependencyGraph, fileData, folders, allFiles, FileDetectionData, rulesetsData
 
     );
-    if (newFiles && Object.keys(newFiles).length > 0) {
-        const fileSendPromises = Object.entries(newFiles).map(([filePath, content]) =>
+    if (allFiles && Object.keys(allFiles).length > 0) {
+        console.log("__________________NEW FILES __________________");
+        const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
             sendFileToServer(filePath, content, fileData)
         );
         await Promise.all(fileSendPromises);
@@ -103,7 +105,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 
       
-        await detectCodeSmells(dependencyGraph, fileData, folders, newFiles, FileDetectionData, rulesetsData, context);
+        await detectCodeSmells(dependencyGraph, fileData, folders, allFiles, FileDetectionData, rulesetsData, context);
         // Show success message
         statusBarItem.text = "$(check) Analysis complete";
         statusBarItem.show();
@@ -115,7 +117,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // Save all the data 
         context.workspaceState.update('processedFiles', allFiles);
         context.workspaceState.update('fileData', fileData);
-        // context.workspaceState.update('FileDetectionData', FileDetectionData);
+        context.workspaceState.update('FileDetectionData', FileDetectionData);
         context.workspaceState.update('folderStructureData', folderStructureData);
         context.workspaceState.update('dependencyGraph', dependencyGraph);
     }
@@ -316,51 +318,7 @@ async function applyRefactoredCode(editor: vscode.TextEditor, refactoredCode: st
     await vscode.workspace.applyEdit(edit);
 }
 
-class DiagnosticRefactorProvider implements vscode.CodeActionProvider {
-    public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix];
 
-    provideCodeActions(
-        document: vscode.TextDocument,
-        range: vscode.Range,
-        context: vscode.CodeActionContext,
-        token: vscode.CancellationToken
-    ): vscode.CodeAction[] | undefined {
-        // Filter diagnostics that match the selected range
-        const matchingDiagnostics = context.diagnostics.filter(
-            (diagnostic) => diagnostic.range.intersection(range) !== undefined
-        );
-
-        if (matchingDiagnostics.length === 0) {
-            return undefined; // No relevant diagnostics found
-        }
-
-        // Map filtered diagnostics to specific code actions
-        return matchingDiagnostics.map((diagnostic) => {
-
-
-            // Create a descriptive title for the Code Action using template literals
-            const actionTitle = `Fix "${diagnostic.message}" using codeNexus`;
-
-            // Initialize the Code Action with the dynamic title
-            const action = new vscode.CodeAction(actionTitle, vscode.CodeActionKind.QuickFix);
-
-            // Assign the command to be execruted when the Code Action is selected
-            action.command = {
-                command: "extension.refactorProblem",
-                title: "Fix this using codeNexus", // This title won't appear in the Quick Fix menu
-                arguments: [diagnostic], // Pass the specific diagnostic to the command
-            };
-
-            // Associate the diagnostic with this Code Action
-            action.diagnostics = [diagnostic];
-
-            // Optionally mark this as the preferred fix (if applicable)
-            action.isPreferred = true;
-
-            return action;
-        });
-    }
-}
 
 export function deactivate() {
     if (ws) {
