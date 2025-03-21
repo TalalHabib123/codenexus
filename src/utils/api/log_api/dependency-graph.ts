@@ -2,11 +2,16 @@ import axios from 'axios';
 import {ExpressResponseType } from '../../../types/logs';
 import { FileNode } from '../../../types/graph';
 import { BASE_URL} from '../api';
-
+import { authServiceInstance } from '../../../auth/auth';
 
 export const dependencyGraphLog = async (projectTitle: string, graphData: { [key: string]: Map<string, FileNode> }) => {
     try {
-        console.log('Graph data:', graphData);
+      const token = authServiceInstance?.getToken();
+      if (!token) {
+          throw new Error('No token found');
+      }
+      // Add the token to the request headers
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         const graph = convertGraphDataForMongoDB(graphData);
         // Use the converted graph data, not the original
         const response = await axios.post<ExpressResponseType>(`${BASE_URL}/logs/graph/add-or-update`, {

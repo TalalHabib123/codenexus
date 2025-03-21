@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 import { AuthService } from './authService';
 import { HttpClient } from './httpClient';
 import { ProjectsViewProvider } from './authViewProv';
-
+export let authServiceInstance: AuthService | undefined;
 export const auth = (context: vscode.ExtensionContext) => {
     const authService = new AuthService(context);
-  
+    authServiceInstance = authService;
     // Initialize HTTP client
     const httpClient = new HttpClient(authService);
     
