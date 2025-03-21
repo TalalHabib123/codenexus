@@ -643,6 +643,7 @@ export function userTriggeredcodesmell(
             detection.data.forEach((data) => {
               message = ` Long function detected ${data.Detected} `;
               issueMessage = `Long Function Issue: ${data.Issue}`;
+              
               detectedCodeSmells.add({
                 type: "Long Function",
                 filePath,
@@ -735,6 +736,7 @@ export function userTriggeredcodesmell(
               message,
               vscode.DiagnosticSeverity.Warning
             );
+            newDiagnostic.code = `${message}`;
             const existingDiagnostic = diagnostics.find(
               (diag) =>
                 diag.range.isEqual(newDiagnostic.range) &&
@@ -756,6 +758,7 @@ export function userTriggeredcodesmell(
               issueMessage,
               vscode.DiagnosticSeverity.Warning
             );
+            newDiagnostic.code = `${issueMessage}`;
             const existingDiagnostic = diagnostics.find(
               (diag) =>
                 diag.range.isEqual(newDiagnostic.range) &&
@@ -769,9 +772,8 @@ export function userTriggeredcodesmell(
         }
       });
     }
-    console.log(diagnostics, diagnostics.length);
-      const uri = vscode.Uri.file(filePath);
-      diagnosticCollection.set(uri, diagnostics);
+    const uri = vscode.Uri.file(filePath);
+    diagnosticCollection.set(uri, diagnostics);
 
   }
   vscode.commands.executeCommand("package-explorer.refreshCodeSmells");
