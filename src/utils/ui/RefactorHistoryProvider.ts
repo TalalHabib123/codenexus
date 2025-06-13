@@ -2,145 +2,60 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { RefactoringData } from '../../types/refactor_models';
 
+export class RefactorHistoryProvider implements vscode.TreeDataProvider<HistoryTreeItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<HistoryTreeItem | undefined | void> = new vscode.EventEmitter();
+    readonly onDidChangeTreeData: vscode.Event<HistoryTreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
-class RefactorTreeItem extends vscode.TreeItem {
-    constructor(
-        label: string,
-        collapsible: vscode.TreeItemCollapsibleState,
-        command?: vscode.Command,
-        contextValue?: string
-    ) {
-        super(label, collapsible);
-        this.command = command;
-        this.contextValue = contextValue;
-    }
-}
+    constructor(private context: vscode.ExtensionContext) { }
 
-export class RefactorHistoryProvider
-    implements vscode.TreeDataProvider<RefactorTreeItem>
-{
-    private readonly _emitter = new vscode.EventEmitter<
-        RefactorTreeItem | undefined | null | void
-    >();
-    readonly onDidChangeTreeData = this._emitter.event;
-
-    constructor(
-        /** Pass the *shared* refactor cache to keep UI in-sync */
-        private readonly refactorData: { [filePath: string]: RefactoringData[] }
-    ) {}
-
-    refresh() {
-        this._emitter.fire();
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
     }
 
-    /** Collapsed file nodes → single-line version nodes */
-    getChildren(
-        element?: RefactorTreeItem
-    ): vscode.ProviderResult<RefactorTreeItem[]> {
-        if (!element) {
-            // root level = file names
-            return Object.keys(this.refactorData).map(fp => {
-                return new RefactorTreeItem(
-                    path.basename(fp),
-                    vscode.TreeItemCollapsibleState.Collapsed,
-                    undefined,
-                    'fileNode'
-                );
-            });
-        }
-
-        if (element.contextValue === 'fileNode') {
-            const fp = Object.keys(this.refactorData).find(
-                f => path.basename(f) === element.label
-            );
-            if (!fp) {
-                return [];
-            }
-
-            return (
-                this.refactorData[fp]
-                    // only successful refactors
-                    .filter(r => r.success)
-                    // newest first
-                    .sort(
-                        (a, b) => b.time.getTime() - a.time.getTime()
-                    )
-                    .map(r => {
-                        const label = `${
-                            r.refactoring_type ?? 'Refactor'
-                        }  •  ${r.time.toLocaleString()}`;
-                        const item = new RefactorTreeItem(
-                            label,
-                            vscode.TreeItemCollapsibleState.None,
-                            {
-                                command: 'refactorHistory.revert',
-                                title: 'Revert',
-                                arguments: [fp, r],
-                            },
-                            'refactorNode'
-                        );
-
-                        if (!r.outdated) {
-                            item.description = 'current';
-                            item.iconPath = new vscode.ThemeIcon(
-                                'check',
-                                new vscode.ThemeColor('testing.iconPassed')
-                            );
-                        }
-
-                        return item;
-                    })
-            );
-        }
-
-        return [];
-    }
-
-    getTreeItem(element: RefactorTreeItem): vscode.TreeItem {
+    getTreeItem(element: HistoryTreeItem): vscode.TreeItem {
         return element;
     }
 
-    /* ---------- Command handler ---------- */
-    async revert(filePath: string, target: RefactoringData) {
-        const choice = await vscode.window.showWarningMessage(
-            `Revert “${path.basename(
-                filePath
-            )}” to ${target.time.toLocaleString()}?\nThis cannot be undone.`,
-            { modal: true },
-            'Yes',
-            'No'
-        );
-        if (choice !== 'Yes') {
-            return;
+    getChildren(element?: HistoryTreeItem): Thenable<HistoryTreeItem[]> {
+        const data = this.context.workspaceState.get<{ [key: string]: RefactoringData[] }>('refactorData', {});
+        if (!element) {
+            return Promise.resolve(Object.keys(data).map(filePath => {
+                return new HistoryTreeItem(path.basename(filePath), vscode.TreeItemCollapsibleState.Collapsed, 'file', filePath);
+            }));
         }
 
-        try {
-            await vscode.workspace.fs.writeFile(
-                vscode.Uri.file(filePath),
-                new TextEncoder().encode(target.orginal_code ?? '')
-            );
-
-            /* Strip later versions & update flags */
-            const list = this.refactorData[filePath]
-                .filter(r => r.success)
-                .sort((a, b) => b.time.getTime() - a.time.getTime());
-
-            const idx = list.indexOf(target);
-            if (idx !== -1) {
-                list.splice(0, idx); // remove newer items
-                list.forEach(r => (r.outdated = true));
-                list[0].outdated = false;
-                this.refactorData[filePath] = list;
-            }
-
-            this.refresh();
-            vscode.window.showInformationMessage(
-                `Reverted “${path.basename(filePath)}”.`
-            );
-        } catch (err: any) {
-            vscode.window.showErrorMessage(
-                `Revert failed: ${err?.message ?? err}`
-            );
+        if (element.type === 'file' && element.filePath) {
+            const list = (data[element.filePath] || [])
+                .filter(d => d.success)
+                .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+            return Promise.resolve(list.map(refactor => {
+                const label = `${refactor.refactoring_type ?? 'Refactor'} - ${new Date(refactor.time).toLocaleString()}`;
+                const item = new HistoryTreeItem(label, vscode.TreeItemCollapsibleState.None, 'entry', element.filePath, refactor);
+                if (!refactor.outdated) {
+                    item.description = 'current';
+                    item.iconPath = new vscode.ThemeIcon('star-full');
+                }
+                item.command = {
+                    command: 'codenexus.revertHistory',
+                    title: 'Revert',
+                    arguments: [element.filePath, refactor]
+                };
+                return item;
+            }));
         }
+        return Promise.resolve([]);
+    }
+}
+
+export class HistoryTreeItem extends vscode.TreeItem {
+    constructor(
+        label: string,
+        collapsibleState: vscode.TreeItemCollapsibleState,
+        public readonly type: 'file' | 'entry',
+        public readonly filePath?: string,
+        public readonly data?: RefactoringData
+    ) {
+        super(label, collapsibleState);
+        this.contextValue = type;
     }
 }

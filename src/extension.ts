@@ -27,13 +27,14 @@ import { onRulesetChanged } from './utils/workspace-update/rulesets';
 import { auth } from './auth/auth';
 import { DiagnosticRefactorProvider } from './utils/diagnosisRefactor';
 import { RefactorHistoryProvider } from './utils/ui/RefactorHistoryProvider';
+import * as path from 'path';
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
 let folderStructureData: { [key: string]: FolderStructure } = {};
 let statusBarItem: vscode.StatusBarItem;
 export let diagnosticCollection = vscode.languages.createDiagnosticCollection('codeSmells');
-let refactorData: { [key: string]: Array<RefactoringData> } = {};
+export let refactorData: { [key: string]: Array<RefactoringData> } = {};
 let rulesetsData: Rules = {detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: []};
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -195,18 +196,13 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
     // setupRulesetsFileWatcher(context, manualCodeProvider, dependencyGraph, folders, newFiles);
 
-    const refactorHistoryProvider = new RefactorHistoryProvider(refactorData);
-
+    const refactorHistoryProvider = new RefactorHistoryProvider(context);
+    vscode.window.registerTreeDataProvider('refactorHistoryView', refactorHistoryProvider);
     context.subscriptions.push(
-        vscode.window.registerTreeDataProvider('refactorHistoryView', refactorHistoryProvider),
-        vscode.commands.registerCommand(
-            'refactorHistory.revert',
-            refactorHistoryProvider.revert,
-            refactorHistoryProvider
-        ),
-        vscode.commands.registerCommand('refactorHistory.refresh', () =>
-            refactorHistoryProvider.refresh()
-        )
+        vscode.commands.registerCommand('codenexus.refreshRefactorHistory', () => refactorHistoryProvider.refresh()),
+        vscode.commands.registerCommand('codenexus.revertHistory', (file: string, data: RefactoringData) => {
+            revertRefactorVersion(file, data, context, refactorHistoryProvider);
+        })
     );
 
     context.subscriptions.push(
@@ -333,7 +329,43 @@ async function applyRefactoredCode(editor: vscode.TextEditor, refactoredCode: st
     await vscode.workspace.applyEdit(edit);
 }
 
+async function revertRefactorVersion(
+    filePath: string,
+    entry: RefactoringData,
+    context: vscode.ExtensionContext,
+    provider: RefactorHistoryProvider
+) {
+    const answer = await vscode.window.showWarningMessage(
+        'Reverting will remove newer refactorings. This action cannot be undone. Continue?',
+        { modal: true },
+        'Yes',
+        'No'
+    );
+    if (answer !== 'Yes') {
+        return;
+    }
+    const data = context.workspaceState.get<{ [key: string]: RefactoringData[] }>('refactorData', {});
+    const list = data[filePath];
+    if (!list) {
+        return;
+    }
+    const idx = list.findIndex(i => i.time.toString() === entry.time.toString() && i.refactoring_type === entry.refactoring_type);
+    if (idx === -1) {
+        return;
+    }
+    const code = entry.orginal_code ?? '';
+    await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), Buffer.from(code, 'utf8'));
 
+    const newHistory = list.slice(0, idx + 1);
+    if (newHistory.length > 0) {
+        newHistory[newHistory.length - 1].outdated = false;
+    }
+    data[filePath] = newHistory;
+    refactorData = data;
+    await context.workspaceState.update('refactorData', refactorData);
+    provider.refresh();
+    vscode.window.showInformationMessage(`Reverted ${path.basename(filePath)} to selected version.`);
+}
 
 export function deactivate() {
     if (ws) {
