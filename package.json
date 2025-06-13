@@ -90,6 +90,16 @@
       {
         "command": "codenexus.toggleLogin",
         "title": "CodeNexus: Toggle Login"
+      },
+      {
+        "command": "refactorHistory.revert",
+        "title": "Revert to This Version",
+        "category": "Refactor History"
+      },
+      {
+        "command": "refactorHistory.refresh",
+        "title": "Refresh Refactor History",
+        "category": "Refactor History"
       }
     ],
     "configuration": {
@@ -109,6 +119,11 @@
         {
           "command": "manualCodeView.toggleTick",
           "when": "viewItem == 'manualCodeItem'",
+          "group": "inline"
+        },
+        {
+          "command": "refactorHistory.revert",
+          "when": "view == refactorHistoryView && viewItem == refactorNode",
           "group": "inline"
         }
       ],

@@ -26,6 +26,7 @@ import { login } from './utils/ui/login';
 import { onRulesetChanged } from './utils/workspace-update/rulesets';
 import { auth } from './auth/auth';
 import { DiagnosticRefactorProvider } from './utils/diagnosisRefactor';
+import { RefactorHistoryProvider } from './utils/ui/RefactorHistoryProvider';
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
@@ -193,6 +194,20 @@ export async function activate(context: vscode.ExtensionContext) {
     const manualCodeProvider = new ManualCodeProvider(context, rulesetsData);
     vscode.window.registerTreeDataProvider('manualCodeView', manualCodeProvider);
     // setupRulesetsFileWatcher(context, manualCodeProvider, dependencyGraph, folders, newFiles);
+
+    const refactorHistoryProvider = new RefactorHistoryProvider(refactorData);
+
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider('refactorHistoryView', refactorHistoryProvider),
+        vscode.commands.registerCommand(
+            'refactorHistory.revert',
+            refactorHistoryProvider.revert,
+            refactorHistoryProvider
+        ),
+        vscode.commands.registerCommand('refactorHistory.refresh', () =>
+            refactorHistoryProvider.refresh()
+        )
+    );
 
     context.subscriptions.push(
         onRulesetChanged(updatedRulesets => {
