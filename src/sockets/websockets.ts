@@ -200,15 +200,15 @@ function establishWebSocketConnection(codeSmell: string,
                                         await Promise.all(fileSendPromises);
                                         let dependencyGraph = buildDependencyGraph(fileData, folderStructureData, folders);
                                         await detectCodeSmells(dependencyGraph, fileData, folders, files, FileDetectionData, rulesetsData, context);
-
-                                        const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
-                                        processedFiles[file] = refactoredData;
-                                        context.workspaceState.update('processedFiles', processedFiles);
+                                        
                                         context.workspaceState.update('fileData', fileData);
                                         context.workspaceState.update('FileDetectionData', FileDetectionData);
                                         context.workspaceState.update('dependencyGraph', dependencyGraph);
-                                        context.workspaceState.update('refactorData', refactorData);
+                                        const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
+                                        processedFiles[file] = refactoredData;
+                                        context.workspaceState.update('processedFiles', processedFiles);
                                     }
+                                    context.workspaceState.update('refactorData', refactorData);
                                 }
                             }
 
