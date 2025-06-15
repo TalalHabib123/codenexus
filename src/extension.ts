@@ -27,7 +27,9 @@ import { onRulesetChanged } from './utils/workspace-update/rulesets';
 import { auth } from './auth/auth';
 import { DiagnosticRefactorProvider } from './utils/diagnosisRefactor';
 import { RefactorHistoryProvider } from './utils/ui/RefactorHistoryProvider';
+import { saveFileData } from './utils/api/file_data_api';
 import * as path from 'path';
+
 let ws: WebSocket | null = null;
 let fileData: { [key: string]: CodeResponse } = {};
 let FileDetectionData: { [key: string]: DetectionResponse } = {};
@@ -38,15 +40,9 @@ export let refactorData: { [key: string]: Array<RefactoringData> } = {};
 let rulesetsData: Rules = {detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: []};
 
 export async function activate(context: vscode.ExtensionContext) {
-
     auth(context);
     createFile(context);
     login(context);
-    // mainAuth(context);
-// console.log("__________________RULESETS DATA __________________");
-// console.log(rulesetsData);
-// console.log("_____________________________________________________");
-    
     const config = vscode.workspace.getConfiguration('codenexus');
     const showInline = config.get<boolean>('showInlineDiagnostics', false);
     console.log(`showInlineDiagnostics is set to: ${showInline}`);
@@ -66,13 +62,17 @@ export async function activate(context: vscode.ExtensionContext) {
     rulesetsData = context.workspaceState.get<Rules>('rulesetsData', {detectSmells: ["*"], refactorSmells: ["*"], includeFiles: ["*"], excludeFiles: []});
 
     context.subscriptions.push(diagnosticCollection);
-
+    if (fileData && Object.keys(fileData).length > 0) {
+        saveFileData(path.basename(vscode.workspace.workspaceFolders?.[0].uri.fsPath || " "), fileData); 
+    }
+    
     const workspaceFolders = vscode.workspace.workspaceFolders;
 
     const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
     const folders = workspaceFolders?.map(folder => folder.uri.fsPath) || [];
     const allFiles: { [key: string]: string } = { ...processedFiles };
     const newFiles: { [key: string]: string } = {};
+    // BASEUrl post /file-data/update 
 
     if (workspaceFolders) {
         for (const folder of workspaceFolders) {
@@ -87,7 +87,6 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.registerTreeDataProvider('myFolderStructureView', folderStructureProvider);
     watchRulesetsFile(context,
         dependencyGraph, fileData, folders, allFiles, FileDetectionData, rulesetsData
-
     );
     if (allFiles && Object.keys(allFiles).length > 0) {
         console.log("__________________NEW FILES __________________");
@@ -122,6 +121,9 @@ export async function activate(context: vscode.ExtensionContext) {
         context.workspaceState.update('FileDetectionData', FileDetectionData);
         context.workspaceState.update('folderStructureData', folderStructureData);
         context.workspaceState.update('dependencyGraph', dependencyGraph);
+         if (fileData && Object.keys(fileData).length > 0) {
+        saveFileData(path.basename(vscode.workspace.workspaceFolders?.[0].uri.fsPath || " "), fileData); 
+    }
     }
 
     // // Comment From Here

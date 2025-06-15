@@ -17,6 +17,7 @@ import { Rules } from '../types/rulesets';
 import { RefactoringData } from '../types/refactor_models';
 import { detectionLog } from '../utils/api/log_api/detection_logs';
 import { refactorLogs } from '../utils/api/log_api/refactor_logs';
+import { saveFileData } from '../utils/api/file_data_api';
 let statusBarItem: vscode.StatusBarItem;
 
 
@@ -235,7 +236,12 @@ function establishWebSocketConnection(codeSmell: string,
                                         context.workspaceState.update('fileData', fileData);
                                         context.workspaceState.update('FileDetectionData', FileDetectionData);
                                         context.workspaceState.update('dependencyGraph', dependencyGraph);
-                                        
+                                        const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
+                                        processedFiles[file] = refactoredData;
+                                        context.workspaceState.update('processedFiles', processedFiles);
+                                         if (fileData && Object.keys(fileData).length > 0) {
+        saveFileData(path.basename(vscode.workspace.workspaceFolders?.[0].uri.fsPath || " "), fileData); 
+    }
                                     }
                                     processedFiles[file] = refactoredData;
                                     context.workspaceState.update('processedFiles', processedFiles);
