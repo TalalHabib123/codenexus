@@ -114,6 +114,8 @@ async function activate(context) {
         context.workspaceState.update('FileDetectionData', FileDetectionData);
         context.workspaceState.update('folderStructureData', folderStructureData);
         context.workspaceState.update('dependencyGraph', dependencyGraph);
+
+        
     }
     // // Comment From Here
     // const fileSendPromises = Object.entries(allFiles).map(([filePath, content]) =>
