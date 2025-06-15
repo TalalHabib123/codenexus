@@ -171,6 +171,7 @@ function establishWebSocketConnection(codeSmell: string,
                             const workspaceFolders = vscode.workspace.workspaceFolders;
                             const folders = workspaceFolders?.map(folder => folder.uri.fsPath) || [];
                             let files: { [key: string]: string; } = {};
+                            const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
                             if (refactoredData && typeof refactoredData === 'string') {
                                 if (codeMapper(refactoredData, file)) {
                                     if (!refactorData[file]) {
@@ -192,6 +193,36 @@ function establishWebSocketConnection(codeSmell: string,
                                         success: true,
                                         outdated: false,
                                     });
+                                    const additionalData = message.processed_data.additional_data ?? undefined;
+                                    if (additionalData && typeof additionalData === 'object') {
+                                        for (const [file_path_add, refactored_code_add] of Object.entries(additionalData)) {
+                                            if (refactored_code_add && typeof refactored_code_add==='string' 
+                                                    && codeMapper(refactored_code_add, file_path_add)) {
+                                                files[file_path_add] = refactored_code_add;
+                                                if (!refactorData[file_path_add]) {
+                                                    refactorData[file_path_add] = [];
+                                                }
+                                                if (refactorData[file_path_add].length > 0) {
+                                                    for (let i = 0; i < refactorData[file_path_add].length; i++) {
+                                                        if (refactorData[file_path_add][i].refactoring_type === taskJob) {
+                                                            refactorData[file_path_add][i].outdated = true;
+                                                        }
+                                                    }
+                                                }
+                                                refactorData[file_path_add].push({
+                                                    orginal_code: fileData[file_path_add].code,
+                                                    refactored_code: refactored_code_add,
+                                                    refactoring_type: taskJob,
+                                                    time: new Date(),
+                                                    job_id: message.correlation_id,
+                                                    success: true,
+                                                    outdated: false,
+                                                });
+                                                files[file_path_add] = refactored_code_add;
+                                                processedFiles[file_path_add] = refactored_code_add;
+                                            }
+                                        }
+                                    }
                                     if (refactoringMappingHelper[taskJob] === "default") {
                                         files[file] = refactoredData;
                                         const fileSendPromises = Object.entries(files).map(([filePath, content]) =>
@@ -204,15 +235,18 @@ function establishWebSocketConnection(codeSmell: string,
                                         context.workspaceState.update('fileData', fileData);
                                         context.workspaceState.update('FileDetectionData', FileDetectionData);
                                         context.workspaceState.update('dependencyGraph', dependencyGraph);
-                                        const processedFiles = context.workspaceState.get<{ [key: string]: string }>('processedFiles', {});
-                                        processedFiles[file] = refactoredData;
-                                        context.workspaceState.update('processedFiles', processedFiles);
+                                        
                                     }
+                                    processedFiles[file] = refactoredData;
+                                    context.workspaceState.update('processedFiles', processedFiles);
                                     context.workspaceState.update('refactorData', refactorData);
+                                    try {
+                                        await (vscode.commands.executeCommand('codenexus.refreshRefactorHistory') as Promise<void>);
+                                    } catch (error: any) {
+                                        vscode.window.showErrorMessage(`Error executing command: ${error.message}`);
+                                    }
                                 }
                             }
-
-
                         }
                     }
 

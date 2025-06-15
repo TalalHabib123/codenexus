@@ -502,15 +502,20 @@ export const refactor = async (
             const uri = vscode.Uri.file(filePath);
             console.log(FileDetectionData[filePath]);
             console.log(FileDetectionData[filePath]?.user_triggered_detection);
-
             let refactorName = "";
             const match = diagnostic.message.match(/Long parameter list detected: (.+?) with \d+ parameters/);
 
             if (match && match[1]) {
                 refactorName = match[1].replace(/\(.*?\)$/, ""); // Remove everything inside and including ()
             }
+            const additional: Record<string, any> = {};
+            additional["task_name"] = refactorName;
+            additional["additional_data"] = await getDependeciesFunction(filePath, refactorName, dependencyGraph);
+            const bytes = await vscode.workspace.fs.readFile(uri);
+            additional["additional_data"][filePath] = new TextDecoder().decode(bytes);
+            console.log("Additional data for long parameter list:", additional);
 
-            triggerRefactoring("long_parameter_list", filePath, refactorName, context);
+            triggerRefactoring("long_parameter_list", filePath, additional, context);
         }
 
         return undefined;
@@ -581,4 +586,41 @@ const getDependencies = (
     console.log(`Dependencies for ${filePath}:`, dependencies);
 
     return dependencies;
+};
+
+const getDependeciesFunction = async (
+    filepath: string,
+    functionName: string,
+    dependencyGraph: { [workspaceRoot: string]: Map<string, FileNode> }
+): Promise<Record<string, string> | null> => {
+    /* 1. Locate the FileNode that represents `filepath` in any workspace folder */
+    const workspaceFolders =
+        vscode.workspace.workspaceFolders?.map(f => f.uri.fsPath) ?? [];
+
+    let fileNode: FileNode | undefined;
+    for (const root of workspaceFolders) {
+        fileNode = dependencyGraph[root]?.get(filepath);
+        if (fileNode) { break; } // found it
+    }
+    if (!fileNode) { return null; }
+
+    /* 2. Filter its dependencies: keep those that import the function */
+    const depsUsingFn = [...fileNode.dependencies].filter(dep =>
+        dep.weight.some(
+            w => w.source === 'Exporting' && w.name === functionName && w.type === 'function'
+        )
+    );
+    if (depsUsingFn.length === 0) { return null; }
+
+    /* 3. Read all dependent files in parallel */
+    const additionalData: Record<string, string> = {};
+    await Promise.all(
+        depsUsingFn.map(async dep => {
+            const uri = vscode.Uri.file(dep.name);           // dep.name is the path
+            const bytes = await vscode.workspace.fs.readFile(uri);
+            additionalData[dep.name] = new TextDecoder().decode(bytes);
+        })
+    );
+
+    return additionalData;
 };

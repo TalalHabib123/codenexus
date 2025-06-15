@@ -9,7 +9,7 @@ const refactoringHelper: { [key: string]: string }  = {
     "duplicate_code": "default",
     "conditionals": "default",
     "global_conflict": "default",
-    "long_parameter_list": "name",
+    "long_parameter_list": "more",
     "temporary_field": "default",
 };
 

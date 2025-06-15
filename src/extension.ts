@@ -355,12 +355,19 @@ async function revertRefactorVersion(
     }
     const code = entry.orginal_code ?? '';
     await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), Buffer.from(code, 'utf8'));
-
-    const newHistory = list.slice(0, idx + 1);
-    if (newHistory.length > 0) {
-        newHistory[newHistory.length - 1].outdated = false;
+    if (list.length === 1)
+    {
+        delete data[filePath];
+    }   
+    else 
+    {
+        const newHistory = list.slice(0, idx + 1);
+        if (newHistory.length > 0) {
+            newHistory[newHistory.length - 1].outdated = false;
+        }
+        data[filePath] = newHistory;
     }
-    data[filePath] = newHistory;
+
     refactorData = data;
     await context.workspaceState.update('refactorData', refactorData);
     provider.refresh();

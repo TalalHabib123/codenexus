@@ -16,6 +16,12 @@ function taskDataGenerator(fileData: { [key: string]: CodeResponse }, Type: stri
     if (Type === "name") {
         taskData["name"] = additonalData;
     }
+    if (Type === "more") {
+        taskData["name"] = additonalData["task_name"];
+        if (additonalData["additional_data"]) {
+            taskData["additional_data"] = additonalData["additional_data"];
+        }
+    }
 
     return taskData;
 }
