@@ -240,8 +240,8 @@ function establishWebSocketConnection(codeSmell: string,
                                         processedFiles[file] = refactoredData;
                                         context.workspaceState.update('processedFiles', processedFiles);
                                          if (fileData && Object.keys(fileData).length > 0) {
-        saveFileData(path.basename(vscode.workspace.workspaceFolders?.[0].uri.fsPath || " "), fileData); 
-    }
+                                            saveFileData(path.basename(vscode.workspace.workspaceFolders?.[0].uri.fsPath || " "), fileData); 
+                                        }
                                     }
                                     processedFiles[file] = refactoredData;
                                     context.workspaceState.update('processedFiles', processedFiles);
